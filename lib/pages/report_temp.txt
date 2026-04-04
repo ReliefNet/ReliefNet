@@ -1,0 +1,20 @@
+import 'package:flutter/material.dart';
+
+class ReportPage extends StatelessWidget {
+  const ReportPage({super.key});
+  String selectedissue="Medical";
+  final List _issue  = const ["Food", "Medical", "Shelter", "Others"];
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          "Report an Issue",
+          style: TextStyle(color: Colors.black, fontSize: 24,fontWeight: FontWeight.bold)),
+        ),
+        Text("Issue Type"),
+        DropdownButtonFormField<String>(value:selectedissue, ["Food", "Medical", "Shelter", "Others"], onChanged: onChanged)
+      ],
+    );
+  }
+}
