@@ -4,10 +4,10 @@ import 'package:reliefnet/pages/profile_page.dart';
 import 'package:reliefnet/pages/report_page.dart';
 import 'package:reliefnet/pages/settings_page.dart';
 import 'package:reliefnet/pages/volunteer_page.dart';
+import 'package:reliefnet/components/appBar.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
-
   @override
   State<Homepage> createState() => _HomepageState();
 }
@@ -22,16 +22,19 @@ class _HomepageState extends State<Homepage> {
     ProfilePage(),
     SettingsPage(),
   ];
-
+  final List<String> _pageTitles = [
+    'Relief Net',
+    'Report Issue',
+    'Dashboard',
+    'Volunteer',
+    'Profile',
+    'Settings',
+  ];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[selectedindex],
-      appBar: AppBar(
-        title: Text("Relief Net", style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-        backgroundColor: Colors.purple,
-      ),
+      appBar: AppBarComponent(appBarText: _pageTitles[selectedindex]),
       drawer: Drawer(
         width: 220,
         child: Column(

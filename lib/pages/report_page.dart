@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
@@ -14,17 +15,46 @@ class _ReportPageState extends State<ReportPage> {
   String? _urgency;
   String _description = '';
   String _location = '';
+  bool _isSubmitting = false;
 
   final List<String> _issueTypes = ['Food', 'Medical', 'Shelter', 'Other'];
   final List<String> _urgencyLevels = ['Low', 'Medium', 'High'];
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      // will send to Firebase here later
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Report submitted!')));
+      setState(() => _isSubmitting = true);
+
+      try {
+        await FirebaseFirestore.instance.collection('reports').add({
+          'issueType': _issueType,
+          'urgency': _urgency,
+          'description': _description,
+          'location': _location,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Report submitted successfully!')),
+          );
+          _formKey.currentState!.reset();
+          setState(() {
+            _issueType = null;
+            _urgency = null;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isSubmitting = false);
+        }
+      }
     }
   }
 
@@ -108,15 +138,17 @@ class _ReportPageState extends State<ReportPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _submitForm,
+                onPressed: _isSubmitting ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.purple,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text(
-                  "Submit Report",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
+                child: _isSubmitting
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        "Submit Report",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
               ),
             ),
           ],

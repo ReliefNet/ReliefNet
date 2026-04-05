@@ -5,6 +5,9 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Center(
+      child: SizedBox(height: 200, width: 200, child: Text("Profile")),
+    );
+    ;
   }
 }
