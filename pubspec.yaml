@@ -8,15 +8,15 @@ environment:
   sdk: ^3.11.4
 
 dependencies:
+  provider: ^6.1.2
+  shared_preferences: ^2.3.3
+  geolocator: ^10.1.0
+  permission_handler: ^11.3.0
+  cloud_firestore: ^4.15.0
+  firebase_core: ^2.25.0
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  
-  # Missing dependencies added here:
-  provider: ^6.1.2
-  shared_preferences: ^2.3.3
-  firebase_core: ^3.10.1
-  cloud_firestore: ^5.6.2
 
 dev_dependencies:
   flutter_test:
