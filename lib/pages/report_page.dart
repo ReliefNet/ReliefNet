@@ -25,6 +25,20 @@ class _ReportPageState extends State<ReportPage> {
   final List<String> _issueTypes = ['Food', 'Medical', 'Shelter', 'Other'];
   final List<String> _urgencyLevels = ['Low', 'Medium', 'High'];
 
+  // Helper to get color based on urgency
+  Color _getUrgencyColor(String urgency) {
+    switch (urgency) {
+      case 'Low':
+        return Colors.green;
+      case 'Medium':
+        return Colors.amber; // Amber/Yellow
+      case 'High':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
   // 🔥 SUBMIT TO FIRESTORE
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
@@ -162,9 +176,18 @@ class _ReportPageState extends State<ReportPage> {
             DropdownButtonFormField<String>(
               value: _urgency,
               hint: const Text("Select urgency level"),
-              items: _urgencyLevels
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
+              items: _urgencyLevels.map((e) {
+                return DropdownMenuItem(
+                  value: e,
+                  child: Row(
+                    children: [
+                      Icon(Icons.circle, color: _getUrgencyColor(e), size: 14),
+                      const SizedBox(width: 10),
+                      Text(e),
+                    ],
+                  ),
+                );
+              }).toList(),
               onChanged: (val) => setState(() => _urgency = val),
               validator: (val) => val == null ? 'Please select urgency' : null,
               onSaved: (val) => _urgency = val,
