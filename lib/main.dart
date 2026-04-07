@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:reliefnet/pages/dashboard_page.dart';
 import 'package:reliefnet/pages/home_page.dart';
 import 'package:reliefnet/pages/report_page.dart';
 import 'package:reliefnet/pages/volunteer_page.dart';
-import 'package:reliefnet/pages/login_page.dart';
 import 'package:reliefnet/themes/theme_provider.dart';
 
 void main() async {
@@ -31,23 +29,13 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
-      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      
-      // Use a StreamBuilder to check auth status
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          // If the snapshot has data, the user is logged in
-          if (snapshot.hasData) {
-            return const Homepage();
-          }
-          // Otherwise, show the Login Page
-          return const LoginPage();
-        },
-      ),
-      
+      themeMode:
+          themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+
+      home: Homepage(),
       routes: {
         '/report': (context) => const ReportPage(),
         '/dashboard': (context) => const DashboardPage(),
