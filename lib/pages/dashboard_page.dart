@@ -42,7 +42,7 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final textTheme = theme.textTheme;
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -51,7 +51,12 @@ class DashboardPage extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Something went wrong'));
+          return Center(
+            child: Text(
+              'Something went wrong',
+              style: textTheme.bodyMedium,
+            ),
+          );
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -60,7 +65,6 @@ class DashboardPage extends StatelessWidget {
 
         final docs = snapshot.data!.docs;
 
-        // Summary counts
         final total = docs.length;
         final high = docs.where((d) => (d['urgency'] ?? '') == 'High').length;
         final medium = docs.where((d) => (d['urgency'] ?? '') == 'Medium').length;
@@ -71,22 +75,19 @@ class DashboardPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              /// 🔹 Header
               Text(
                 'Live Reports',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: textTheme.bodyLarge?.copyWith(fontSize: 22),
               ),
               const SizedBox(height: 4),
               Text(
                 '$total active reports incoming',
-                style: theme.textTheme.bodyMedium,
+                style: textTheme.bodyMedium,
               ),
               const SizedBox(height: 16),
 
-              // Summary strip
+              /// 🔹 Summary
               Row(
                 children: [
                   _SummaryChip(label: 'Total', count: total, color: theme.colorScheme.primary),
@@ -100,20 +101,29 @@ class DashboardPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // Report cards
+              /// 🔹 Empty state
               if (docs.isEmpty)
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 60),
                     child: Column(
                       children: [
-                        Icon(Icons.inbox_outlined, size: 48, color: theme.colorScheme.primary.withOpacity(0.4)),
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 48,
+                          color: theme.colorScheme.primary.withOpacity(0.4),
+                        ),
                         const SizedBox(height: 12),
-                        Text('No reports yet', style: theme.textTheme.bodyMedium),
+                        Text(
+                          'No reports yet',
+                          style: textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   ),
                 )
+
+              /// 🔹 List
               else
                 ListView.separated(
                   shrinkWrap: true,
@@ -131,14 +141,18 @@ class DashboardPage extends StatelessWidget {
                     final urgencyColor = _urgencyColor(urgency);
 
                     return Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(14),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            /// 🔹 Top row
                             Row(
                               children: [
-                                // Issue icon
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
@@ -155,12 +169,13 @@ class DashboardPage extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     issueType,
-                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                    style: textTheme.bodyLarge?.copyWith(
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
-                                // Urgency badge
+
+                                /// Urgency badge
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
@@ -175,9 +190,8 @@ class DashboardPage extends StatelessWidget {
                                       const SizedBox(width: 5),
                                       Text(
                                         urgency,
-                                        style: TextStyle(
+                                        style: textTheme.bodySmall?.copyWith(
                                           color: urgencyColor,
-                                          fontSize: 12,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -186,30 +200,36 @@ class DashboardPage extends StatelessWidget {
                                 ),
                               ],
                             ),
+
                             const SizedBox(height: 10),
+
+                            /// Description
                             Text(
                               description,
-                              style: theme.textTheme.bodyMedium,
+                              style: textTheme.bodyMedium,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
+
                             const SizedBox(height: 10),
+
+                            /// Bottom row
                             Row(
                               children: [
-                                Icon(Icons.location_on_outlined, size: 14, color: theme.textTheme.bodyMedium?.color),
+                                Icon(Icons.location_on_outlined, size: 14, color: textTheme.bodySmall?.color),
                                 const SizedBox(width: 4),
                                 Text(
                                   lat != null && lng != null
                                       ? '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}'
                                       : 'No location',
-                                  style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
+                                  style: textTheme.bodySmall,
                                 ),
                                 const Spacer(),
-                                Icon(Icons.access_time, size: 14, color: theme.textTheme.bodyMedium?.color),
+                                Icon(Icons.access_time, size: 14, color: textTheme.bodySmall?.color),
                                 const SizedBox(width: 4),
                                 Text(
                                   _timeAgo(timestamp),
-                                  style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
+                                  style: textTheme.bodySmall,
                                 ),
                               ],
                             ),
@@ -240,6 +260,8 @@ class _SummaryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -252,20 +274,15 @@ class _SummaryChip extends StatelessWidget {
           children: [
             Text(
               '$count',
-              style: TextStyle(
+              style: textTheme.bodyLarge?.copyWith(
                 color: color,
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(
-                color: color,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
+              style: textTheme.bodySmall?.copyWith(color: color),
             ),
           ],
         ),

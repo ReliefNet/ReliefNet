@@ -9,12 +9,14 @@ import 'package:reliefnet/components/appBar.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
+
   @override
   State<Homepage> createState() => _HomepageState();
 }
 
 class _HomepageState extends State<Homepage> {
   int selectedindex = 0;
+
   final List<Widget> _pages = const [
     Center(child: Text("Home")),
     ReportPage(),
@@ -23,6 +25,7 @@ class _HomepageState extends State<Homepage> {
     ProfilePage(),
     SettingsPage(),
   ];
+
   final List<String> _pageTitles = [
     'Relief Net',
     'Report Issue',
@@ -32,116 +35,108 @@ class _HomepageState extends State<Homepage> {
     'Settings',
   ];
 
+  void _navigate(int index) {
+    setState(() => selectedindex = index);
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
+      appBar: AppBarComponent(
+        appBarText: _pageTitles[selectedindex],
+      ),
+
       body: _pages[selectedindex],
-      appBar: AppBarComponent(appBarText: _pageTitles[selectedindex]),
+
       drawer: Drawer(
-        width: 220,
+        width: 240,
         child: Column(
           children: [
-            // logo
-            DrawerHeader(child: Image.asset("assets/images/logo.png")),
-            // home
-            ListTile(
-              leading: const Icon(Icons.home_outlined),
-              title: const Text("Home"),
-              onTap: () {
-                setState(() {
-                  selectedindex = 0;
-                });
-                Navigator.pop(context);
-              },
+            /// 🔹 Header
+            DrawerHeader(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset("assets/images/logo.png", height: 80),
+                  const SizedBox(height: 10),
+                  Text(
+                    "ReliefNet",
+                    style: textTheme.bodyLarge,
+                  ),
+                ],
+              ),
             ),
-            // report screen
-            ListTile(
-              leading: const Icon(Icons.report_outlined),
-              title: const Text("Report"),
-              onTap: () {
-                setState(() {
-                  selectedindex = 1;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            // dashboard
-            ListTile(
-              leading: const Icon(Icons.dashboard_outlined),
-              title: const Text("Dashboard"),
-              onTap: () {
-                setState(() {
-                  selectedindex = 2;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            // volunteer
-            ListTile(
-              leading: const Icon(Icons.help_outline),
-              title: const Text("Volunteer"),
-              onTap: () {
-                setState(() {
-                  selectedindex = 3;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            const Divider(),
-            // profile
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text("Profile"),
-              onTap: () {
-                setState(() {
-                  selectedindex = 4;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            // Settings
-            ListTile(
-              leading: const Icon(Icons.settings_outlined),
-              title: const Text("Settings"),
-              onTap: () {
-                setState(() {
-                  selectedindex = 5;
-                });
-                Navigator.pop(context);
-              },
-            ),
+
+            /// 🔹 Main Items
+            _buildTile(Icons.home_outlined, "Home", 0, textTheme),
+            _buildTile(Icons.report_outlined, "Report", 1, textTheme),
+            _buildTile(Icons.dashboard_outlined, "Dashboard", 2, textTheme),
+            _buildTile(Icons.help_outline, "Volunteer", 3, textTheme),
+
+
+            /// 🔹 Secondary Items
+            _buildTile(Icons.person_outline, "Profile", 4, textTheme),
+            _buildTile(Icons.settings_outlined, "Settings", 5, textTheme),
+
             const Spacer(),
-            // Logout with confirmation
+
+            /// 🔹 Logout
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text("Logout", style: TextStyle(color: Colors.red)),
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text("Logout"),
-                    content: const Text("Are you sure you want to logout?"),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("Cancel"),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          Navigator.pop(context); // Close dialog
-                          await FirebaseAuth.instance.signOut();
-                        },
-                        child: const Text("Logout",
-                            style: TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              title: Text(
+                "Logout",
+                style: textTheme.bodyMedium?.copyWith(color: Colors.red),
+              ),
+              onTap: () => _showLogoutDialog(context, textTheme),
             ),
+
             const SizedBox(height: 20),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 🔥 Reusable Tile (cleaner code)
+  Widget _buildTile(
+      IconData icon, String title, int index, TextTheme textTheme) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title, style: textTheme.bodyMedium),
+      selected: selectedindex == index,
+      onTap: () => _navigate(index),
+    );
+  }
+
+  /// 🔥 Logout Dialog (clean + themed)
+  void _showLogoutDialog(BuildContext context, TextTheme textTheme) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Logout", style: textTheme.bodyLarge),
+        content: Text(
+          "Are you sure you want to logout?",
+          style: textTheme.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Cancel", style: textTheme.bodySmall),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await FirebaseAuth.instance.signOut();
+            },
+            child: Text(
+              "Logout",
+              style: textTheme.bodyMedium?.copyWith(color: Colors.red),
+            ),
+          ),
+        ],
       ),
     );
   }

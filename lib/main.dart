@@ -8,6 +8,8 @@ import 'package:reliefnet/pages/home_page.dart';
 import 'package:reliefnet/pages/report_page.dart';
 import 'package:reliefnet/pages/volunteer_page.dart';
 import 'package:reliefnet/pages/login_page.dart';
+import 'package:reliefnet/themes/theme_light.dart';
+import 'package:reliefnet/themes/theme_dark.dart';
 import 'package:reliefnet/themes/theme_provider.dart';
 
 void main() async {
@@ -32,30 +34,63 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
 
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
+      /// THEMES
+      theme: lightmode,
+      darkTheme: darkmode,
       themeMode:
           themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (snapshot.hasData) {
-            return const Homepage();
-          } else {
-            return const LoginPage();
-          }
-        },
-      ),
+      /// ROUTES
       routes: {
         '/report': (context) => const ReportPage(),
         '/dashboard': (context) => const DashboardPage(),
         '/volunteer': (context) => const VolunteerPage(),
+      },
+
+      /// AUTH HANDLER
+      home: const AuthWrapper(),
+    );
+  }
+}
+
+/// 🔥 Separate widget (VERY IMPORTANT)
+/// Prevents full app rebuild issues
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        /// Loading
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Checking authentication...",
+                    style: textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        /// Logged in
+        if (snapshot.hasData) {
+          return const Homepage();
+        }
+
+        /// Not logged in
+        return const LoginPage();
       },
     );
   }

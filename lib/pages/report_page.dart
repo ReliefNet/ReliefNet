@@ -17,21 +17,21 @@ class _ReportPageState extends State<ReportPage> {
   String _description = '';
   bool _isSubmitting = false;
 
-  String _locationText = '';
   double? _latitude;
   double? _longitude;
   bool _isFetchingLocation = false;
 
+  final TextEditingController _locationController = TextEditingController();
+
   final List<String> _issueTypes = ['Food', 'Medical', 'Shelter', 'Other'];
   final List<String> _urgencyLevels = ['Low', 'Medium', 'High'];
 
-  // Helper to get color based on urgency
   Color _getUrgencyColor(String urgency) {
     switch (urgency) {
       case 'Low':
         return Colors.green;
       case 'Medium':
-        return Colors.amber; // Amber/Yellow
+        return Colors.amber;
       case 'High':
         return Colors.red;
       default:
@@ -39,7 +39,6 @@ class _ReportPageState extends State<ReportPage> {
     }
   }
 
-  // 🔥 SUBMIT TO FIRESTORE
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -69,20 +68,19 @@ class _ReportPageState extends State<ReportPage> {
         );
 
         _formKey.currentState!.reset();
+        _locationController.clear();
+
         setState(() {
           _issueType = null;
           _urgency = null;
-          _locationText = '';
           _latitude = null;
           _longitude = null;
         });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
-      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -90,14 +88,10 @@ class _ReportPageState extends State<ReportPage> {
     }
   }
 
-  // 📍 GET LOCATION
   Future<void> _getLocation() async {
     setState(() => _isFetchingLocation = true);
 
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Location services are disabled')),
@@ -106,7 +100,8 @@ class _ReportPageState extends State<ReportPage> {
       return;
     }
 
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
+
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
@@ -120,7 +115,7 @@ class _ReportPageState extends State<ReportPage> {
 
     if (permission == LocationPermission.deniedForever) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location permission permanently denied')),
+        const SnackBar(content: Text('Location permanently denied')),
       );
       setState(() => _isFetchingLocation = false);
       return;
@@ -133,14 +128,22 @@ class _ReportPageState extends State<ReportPage> {
     setState(() {
       _latitude = position.latitude;
       _longitude = position.longitude;
-      _locationText =
+      _locationController.text =
           "Lat: ${_latitude!.toStringAsFixed(4)}, Lng: ${_longitude!.toStringAsFixed(4)}";
       _isFetchingLocation = false;
     });
   }
 
   @override
+  void dispose() {
+    _locationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(
@@ -148,21 +151,24 @@ class _ReportPageState extends State<ReportPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               "Report an Issue",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: textTheme.bodyLarge?.copyWith(fontSize: 22),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // Issue Type
-            const Text("Issue Type"),
+            /// Issue Type
+            Text("Issue Type", style: textTheme.bodyMedium),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _issueType,
-              hint: const Text("Select issue type"),
-              items: _issueTypes
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
+              hint: Text("Select issue type", style: textTheme.bodySmall),
+              items: _issueTypes.map((e) {
+                return DropdownMenuItem(
+                  value: e,
+                  child: Text(e, style: textTheme.bodyMedium),
+                );
+              }).toList(),
               onChanged: (val) => setState(() => _issueType = val),
               validator: (val) =>
                   val == null ? 'Please select an issue type' : null,
@@ -170,12 +176,12 @@ class _ReportPageState extends State<ReportPage> {
             ),
             const SizedBox(height: 16),
 
-            // Urgency
-            const Text("Urgency"),
+            /// Urgency
+            Text("Urgency", style: textTheme.bodyMedium),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _urgency,
-              hint: const Text("Select urgency level"),
+              hint: Text("Select urgency level", style: textTheme.bodySmall),
               items: _urgencyLevels.map((e) {
                 return DropdownMenuItem(
                   value: e,
@@ -183,7 +189,7 @@ class _ReportPageState extends State<ReportPage> {
                     children: [
                       Icon(Icons.circle, color: _getUrgencyColor(e), size: 14),
                       const SizedBox(width: 10),
-                      Text(e),
+                      Text(e, style: textTheme.bodyMedium),
                     ],
                   ),
                 );
@@ -194,20 +200,22 @@ class _ReportPageState extends State<ReportPage> {
             ),
             const SizedBox(height: 16),
 
-            // 📍 Location
-            const Text("Location"),
+            /// Location
+            Text("Location", style: textTheme.bodyMedium),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
+                    controller: _locationController,
                     readOnly: true,
-                    decoration: const InputDecoration(
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    decoration: InputDecoration(
                       hintText: "Fetch your location",
-                      border: OutlineInputBorder(),
+                      hintStyle: textTheme.bodySmall,
+                      border: const OutlineInputBorder(),
                     ),
-                    controller: TextEditingController(text: _locationText),
-                    validator: (val) =>
+                    validator: (_) =>
                         _latitude == null ? 'Please fetch location' : null,
                   ),
                 ),
@@ -224,17 +232,18 @@ class _ReportPageState extends State<ReportPage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 16),
 
-            // Description
-            const Text("Description"),
+            /// Description
+            Text("Description", style: textTheme.bodyMedium),
             const SizedBox(height: 8),
             TextFormField(
               maxLines: 4,
-              decoration: const InputDecoration(
+              style: Theme.of(context).textTheme.bodyMedium,
+              decoration: InputDecoration(
                 hintText: "Describe the issue...",
-                border: OutlineInputBorder(),
+                hintStyle: textTheme.bodySmall,
+                border: const OutlineInputBorder(),
               ),
               validator: (val) => val == null || val.isEmpty
                   ? 'Please enter a description'
@@ -244,16 +253,18 @@ class _ReportPageState extends State<ReportPage> {
 
             const SizedBox(height: 24),
 
-            // Submit Button
+            /// Submit Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitForm,
                 child: _isSubmitting
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
+                    : Text(
                         "Submit Report",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
               ),
             ),

@@ -6,8 +6,21 @@ ThemeData lightmode = ThemeData(
   scaffoldBackgroundColor: const Color(0xFFF9FAFB),
   fontFamily: 'Poppins',
   textTheme: const TextTheme(
-    bodyLarge: TextStyle(color: Color(0xFF111827)),
-    bodyMedium: TextStyle(color: Color(0xFF6B7280)),
+    bodyLarge: TextStyle(
+      color: Color(0xFF111827),
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+    ),
+    bodyMedium: TextStyle(
+      color: Color(0xFF374151),
+      fontSize: 14,
+      fontWeight: FontWeight.normal,
+    ),
+    bodySmall: TextStyle(
+      color: Color(0xFF9CA3AF),
+      fontSize: 12,
+      fontWeight: FontWeight.normal,
+    ),
   ),
   colorScheme: ColorScheme.light(
     surface: const Color(0xFFF9FAFB),
@@ -28,6 +41,7 @@ ThemeData lightmode = ThemeData(
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
+      elevation: 2,
       backgroundColor: const Color(0xFF2563EB),
       foregroundColor: Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 14),
