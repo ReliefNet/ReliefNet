@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:reliefnet/pages/dashboard_page.dart';
 import 'package:reliefnet/pages/home_page.dart';
 import 'package:reliefnet/pages/report_page.dart';
 import 'package:reliefnet/pages/volunteer_page.dart';
+import 'package:reliefnet/pages/login_page.dart';
 import 'package:reliefnet/themes/theme_provider.dart';
 
 void main() async {
@@ -35,7 +37,21 @@ class MyApp extends StatelessWidget {
       themeMode:
           themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
-      home: Homepage(),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasData) {
+            return const Homepage();
+          } else {
+            return const LoginPage();
+          }
+        },
+      ),
       routes: {
         '/report': (context) => const ReportPage(),
         '/dashboard': (context) => const DashboardPage(),

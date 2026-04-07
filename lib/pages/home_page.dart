@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:reliefnet/pages/dashboard_page.dart';
 import 'package:reliefnet/pages/profile_page.dart';
 import 'package:reliefnet/pages/report_page.dart';
@@ -30,6 +31,7 @@ class _HomepageState extends State<Homepage> {
     'Profile',
     'Settings',
   ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,8 +45,8 @@ class _HomepageState extends State<Homepage> {
             DrawerHeader(child: Image.asset("assets/images/logo.png")),
             // home
             ListTile(
-              leading: Icon(Icons.home_outlined),
-              title: Text("Home"),
+              leading: const Icon(Icons.home_outlined),
+              title: const Text("Home"),
               onTap: () {
                 setState(() {
                   selectedindex = 0;
@@ -54,8 +56,8 @@ class _HomepageState extends State<Homepage> {
             ),
             // report screen
             ListTile(
-              leading: Icon(Icons.report_outlined),
-              title: Text("Report"),
+              leading: const Icon(Icons.report_outlined),
+              title: const Text("Report"),
               onTap: () {
                 setState(() {
                   selectedindex = 1;
@@ -65,8 +67,8 @@ class _HomepageState extends State<Homepage> {
             ),
             // dashboard
             ListTile(
-              leading: Icon(Icons.dashboard_outlined),
-              title: Text("Dashboard"),
+              leading: const Icon(Icons.dashboard_outlined),
+              title: const Text("Dashboard"),
               onTap: () {
                 setState(() {
                   selectedindex = 2;
@@ -76,8 +78,8 @@ class _HomepageState extends State<Homepage> {
             ),
             // volunteer
             ListTile(
-              leading: Icon(Icons.help_outline),
-              title: Text("Volunteer"),
+              leading: const Icon(Icons.help_outline),
+              title: const Text("Volunteer"),
               onTap: () {
                 setState(() {
                   selectedindex = 3;
@@ -85,11 +87,11 @@ class _HomepageState extends State<Homepage> {
                 Navigator.pop(context);
               },
             ),
-            Divider(),
+            const Divider(),
             // profile
             ListTile(
-              leading: Icon(Icons.person_outline),
-              title: Text("Profile"),
+              leading: const Icon(Icons.person_outline),
+              title: const Text("Profile"),
               onTap: () {
                 setState(() {
                   selectedindex = 4;
@@ -99,8 +101,8 @@ class _HomepageState extends State<Homepage> {
             ),
             // Settings
             ListTile(
-              leading: Icon(Icons.settings_outlined),
-              title: Text("Settings"),
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text("Settings"),
               onTap: () {
                 setState(() {
                   selectedindex = 5;
@@ -108,6 +110,36 @@ class _HomepageState extends State<Homepage> {
                 Navigator.pop(context);
               },
             ),
+            const Spacer(),
+            // Logout with confirmation
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text("Logout", style: TextStyle(color: Colors.red)),
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text("Logout"),
+                    content: const Text("Are you sure you want to logout?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text("Cancel"),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.pop(context); // Close dialog
+                          await FirebaseAuth.instance.signOut();
+                        },
+                        child: const Text("Logout",
+                            style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
