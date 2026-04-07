@@ -249,10 +249,6 @@ class _ReportPageState extends State<ReportPage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitForm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
                 child: _isSubmitting
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
