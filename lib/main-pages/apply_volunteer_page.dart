@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 
 class ApplyVolunteerPage extends StatefulWidget {
   const ApplyVolunteerPage({super.key});
@@ -69,14 +70,14 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
           .collection('volunteer_applications')
           .doc(user.uid)
           .set({
-        'uid': user.uid,
-        'email': _emailController.text.trim(),
-        'reason': _reasonController.text.trim(),
-        'skills': _skillsController.text.trim(),
-        'experience': _experienceController.text.trim(),
-        'status': 'pending',
-        'appliedAt': FieldValue.serverTimestamp(),
-      });
+            'uid': user.uid,
+            'email': _emailController.text.trim(),
+            'reason': _reasonController.text.trim(),
+            'skills': _skillsController.text.trim(),
+            'experience': _experienceController.text.trim(),
+            'status': 'pending',
+            'appliedAt': FieldValue.serverTimestamp(),
+          });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -85,9 +86,9 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -121,20 +122,20 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
         if (snapshot.connectionState == ConnectionState.waiting &&
             _existingApplication == null) {
           return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         if (snapshot.hasData && snapshot.data!.exists) {
           final data = snapshot.data!.data() as Map<String, dynamic>;
           final status = data['status'];
           final volunteerId = data['volunteerId'];
-          
+
           print("DEBUG: Application Data found for UID: ${user.uid}");
           print("DEBUG: Status: $status");
           print("DEBUG: VolunteerID: $volunteerId");
 
           return Scaffold(
-            appBar: AppBar(title: const Text("Application Status")),
             body: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -146,8 +147,9 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                           ? Icons.check_circle_outline
                           : Icons.hourglass_empty,
                       size: 80,
-                      color:
-                          status == 'approved' ? Colors.green : Colors.orange,
+                      color: status == 'approved'
+                          ? Colors.green
+                          : Colors.orange,
                     ),
                     const SizedBox(height: 24),
                     Text(
@@ -164,22 +166,37 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.blue.shade300),
-                        ),
-                        child: Text(
-                          volunteerId.toString(),
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 4,
-                            fontFamily: 'monospace',
-                            color: Colors.blue,
+                      InkWell(
+                        onTap: () {
+                          // This is the core logic
+                          Clipboard.setData(
+                            ClipboardData(text: "Text to copy"),
+                          );
+
+                          // Optional: Show a SnackBar to let the user know it worked
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Copied to clipboard!")),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.blue.shade300),
+                          ),
+                          child: Text(
+                            volunteerId.toString(),
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 4,
+                              fontFamily: 'monospace',
+                              color: Colors.blue,
+                            ),
                           ),
                         ),
                       ),
@@ -199,7 +216,9 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                       const SizedBox(height: 10),
                       SelectableText(
                         "Firestore Document ID: ${user.uid}",
-                        style: textTheme.bodySmall?.copyWith(color: Colors.grey),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                        ),
                       ),
                       const Text(
                         "(Use this ID to find your application in the Firebase Console)",
@@ -209,7 +228,10 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                     const SizedBox(height: 40),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text("Back to Home"),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: const Text("Back to Home"),
+                      ),
                     ),
                   ],
                 ),
@@ -230,7 +252,10 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                   style: textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 25),
-                Text("Email Address for Updates *", style: textTheme.bodyMedium),
+                Text(
+                  "Email Address for Updates *",
+                  style: textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _emailController,
@@ -239,10 +264,13 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                     hintText: "Enter your email address...",
                     prefixIcon: Icon(Icons.email_outlined),
                   ),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 20),
-                Text("Why do you want to volunteer? *",
-                    style: textTheme.bodyMedium),
+                Text(
+                  "Why do you want to volunteer? *",
+                  style: textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _reasonController,
@@ -250,6 +278,7 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                   decoration: const InputDecoration(
                     hintText: "Tell us about your motivation...",
                   ),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 20),
                 Text("Your Skills *", style: textTheme.bodyMedium),
@@ -259,10 +288,13 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                   decoration: const InputDecoration(
                     hintText: "e.g., First Aid, Driving, Cooking, etc.",
                   ),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 20),
-                Text("Previous Experience (Optional)",
-                    style: textTheme.bodyMedium),
+                Text(
+                  "Previous Experience (Optional)",
+                  style: textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _experienceController,
@@ -270,6 +302,7 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                   decoration: const InputDecoration(
                     hintText: "Tell us about any relevant work you've done...",
                   ),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 30),
                 SelectableText(
