@@ -6,7 +6,7 @@ import 'package:reliefnet/main-pages/report_page.dart';
 import 'package:reliefnet/secondary-pages/settings_page.dart';
 import 'package:reliefnet/main-pages/volunteer_page.dart';
 import 'package:reliefnet/main-pages/apply_volunteer_page.dart';
-import 'package:reliefnet/components/appBar.dart';
+import 'package:reliefnet/components/app_bar.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';

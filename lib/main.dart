@@ -14,12 +14,18 @@ import 'package:reliefnet/themes/theme_dark.dart';
 import 'package:reliefnet/themes/theme_provider.dart';
 
 Future<void> main() async {
+  // Ensure native bindings are ready
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
   await Firebase.initializeApp();
+
+  // Create the provider instance and trigger the internal load
+  final themeProvider = ThemeProvider();
 
   runApp(
     ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+      create: (_) => themeProvider,
       child: const MyApp(),
     ),
   );
@@ -30,6 +36,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to the provider for theme changes
     final themeProvider = context.watch<ThemeProvider>();
 
     return MaterialApp(
@@ -38,8 +45,8 @@ class MyApp extends StatelessWidget {
       /// THEMES
       theme: lightmode,
       darkTheme: darkmode,
-      themeMode:
-          themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      // Always use the themeMode from the provider
+      themeMode: themeProvider.themeMode,
 
       /// ROUTES
       routes: {
@@ -55,8 +62,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// 🔥 Separate widget (VERY IMPORTANT)
-/// Prevents full app rebuild issues
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -67,7 +72,7 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        /// Loading
+        // Loading State
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
             body: Center(
@@ -86,12 +91,12 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        /// Logged in
+        // Logged In
         if (snapshot.hasData) {
           return const Homepage();
         }
 
-        /// Not logged in
+        // Logged Out
         return const LoginPage();
       },
     );
