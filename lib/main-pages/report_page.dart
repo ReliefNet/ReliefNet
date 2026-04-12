@@ -59,8 +59,8 @@ class _ReportPageState extends State<ReportPage> {
         'lat': _latitude,
         'lng': _longitude,
         'timestamp': FieldValue.serverTimestamp(),
-        'status': 'unassigned',         // ✅ new
-        'assignedVolunteers': [],        // ✅ new
+        'status': 'unassigned', // ✅ new
+        'assignedVolunteers': [], // ✅ new
       });
 
       if (mounted) {
@@ -78,9 +78,9 @@ class _ReportPageState extends State<ReportPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -156,7 +156,8 @@ class _ReportPageState extends State<ReportPage> {
                   .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                   .toList(),
               onChanged: (val) => setState(() => _issueType = val),
-              validator: (val) => val == null ? 'Please select an issue type' : null,
+              validator: (val) =>
+                  val == null ? 'Please select an issue type' : null,
               onSaved: (val) => _issueType = val,
             ),
             const SizedBox(height: 16),
@@ -218,13 +219,15 @@ class _ReportPageState extends State<ReportPage> {
             const Text('Description'),
             const SizedBox(height: 8),
             TextFormField(
+              style: Theme.of(context).textTheme.bodyMedium,
               maxLines: 4,
               decoration: const InputDecoration(
                 hintText: 'Describe the issue...',
                 border: OutlineInputBorder(),
               ),
-              validator: (val) =>
-                  val == null || val.isEmpty ? 'Please enter a description' : null,
+              validator: (val) => val == null || val.isEmpty
+                  ? 'Please enter a description'
+                  : null,
               onSaved: (val) => _description = val!,
             ),
             const SizedBox(height: 24),
@@ -235,7 +238,10 @@ class _ReportPageState extends State<ReportPage> {
                 onPressed: _isSubmitting ? null : _submitForm,
                 child: _isSubmitting
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Submit Report', style: TextStyle(fontSize: 16)),
+                    : const Text(
+                        'Submit Report',
+                        style: TextStyle(fontSize: 16),
+                      ),
               ),
             ),
           ],

@@ -19,7 +19,7 @@ class AppBarComponent extends StatelessWidget implements PreferredSizeWidget {
     final isDark = themeProvider.themeMode == ThemeMode.dark;
 
     return AppBar(
-      title: Text(appBarText),
+      title: Text(appBarText,style: TextStyle(fontSize: 20),),
       actions: [
         IconButton(
           onPressed: () => themeProvider.toggleTheme(),
