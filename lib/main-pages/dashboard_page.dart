@@ -22,7 +22,12 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _fetchingLocation = false;
   Map<String, dynamic>? _userProfile;
 
-  final List<String> _sortOptions = ['Latest', 'Most Urgent', 'Nearest', 'Unassigned Only'];
+  final List<String> _sortOptions = [
+    'Latest',
+    'Most Urgent',
+    'Nearest',
+    'Unassigned Only',
+  ];
 
   @override
   void initState() {
@@ -34,7 +39,10 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _loadUserProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
     if (doc.exists && mounted) {
       setState(() => _userProfile = doc.data());
     }
@@ -65,44 +73,58 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Color _urgencyColor(String urgency) {
     switch (urgency) {
-      case 'High':   return const Color(0xFFEF4444);
-      case 'Medium': return const Color(0xFFF59E0B);
-      case 'Low':    return const Color(0xFF22C55E);
-      default:       return Colors.grey;
+      case 'High':
+        return const Color(0xFFEF4444);
+      case 'Medium':
+        return const Color(0xFFF59E0B);
+      case 'Low':
+        return const Color(0xFF22C55E);
+      default:
+        return Colors.grey;
     }
   }
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'assigned':  return const Color(0xFF6366F1);
-      case 'completed': return const Color(0xFF22C55E);
-      default:          return const Color(0xFF9CA3AF); // unassigned
+      case 'assigned':
+        return const Color(0xFF6366F1);
+      case 'completed':
+        return const Color(0xFF22C55E);
+      default:
+        return const Color(0xFF9CA3AF); // unassigned
     }
   }
 
   IconData _statusIcon(String status) {
     switch (status) {
-      case 'assigned':  return Icons.person_outline;
-      case 'completed': return Icons.check_circle_outline;
-      default:          return Icons.radio_button_unchecked;
+      case 'assigned':
+        return Icons.person_outline;
+      case 'completed':
+        return Icons.check_circle_outline;
+      default:
+        return Icons.radio_button_unchecked;
     }
   }
 
   IconData _issueIcon(String type) {
     switch (type) {
-      case 'Food':    return Icons.restaurant_outlined;
-      case 'Medical': return Icons.local_hospital_outlined;
-      case 'Shelter': return Icons.home_outlined;
-      default:        return Icons.help_outline;
+      case 'Food':
+        return Icons.restaurant_outlined;
+      case 'Medical':
+        return Icons.local_hospital_outlined;
+      case 'Shelter':
+        return Icons.home_outlined;
+      default:
+        return Icons.help_outline;
     }
   }
 
   String _timeAgo(Timestamp? timestamp) {
     if (timestamp == null) return 'Just now';
     final diff = DateTime.now().difference(timestamp.toDate());
-    if (diff.inMinutes < 1)  return 'Just now';
+    if (diff.inMinutes < 1) return 'Just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24)   return '${diff.inHours}h ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
   }
 
@@ -111,7 +133,8 @@ class _DashboardPageState extends State<DashboardPage> {
     const R = 6371.0;
     final dLat = _deg2rad(lat - _userPosition!.latitude);
     final dLng = _deg2rad(lng - _userPosition!.longitude);
-    final a = sin(dLat / 2) * sin(dLat / 2) +
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
         cos(_deg2rad(_userPosition!.latitude)) *
             cos(_deg2rad(lat)) *
             sin(dLng / 2) *
@@ -125,20 +148,27 @@ class _DashboardPageState extends State<DashboardPage> {
     if (lat == null || lng == null) return 'No location';
     if (_userPosition == null) return 'Fetching...';
     final d = _distanceKm(lat, lng);
-    return d < 1 ? '${(d * 1000).toStringAsFixed(0)} m away'
-                 : '${d.toStringAsFixed(1)} km away';
+    return d < 1
+        ? '${(d * 1000).toStringAsFixed(0)} m away'
+        : '${d.toStringAsFixed(1)} km away';
   }
 
   int _urgencyRank(String urgency) {
     switch (urgency) {
-      case 'High':   return 0;
-      case 'Medium': return 1;
-      case 'Low':    return 2;
-      default:       return 3;
+      case 'High':
+        return 0;
+      case 'Medium':
+        return 1;
+      case 'Low':
+        return 2;
+      default:
+        return 3;
     }
   }
 
-  List<QueryDocumentSnapshot> _applyFilterAndSort(List<QueryDocumentSnapshot> docs) {
+  List<QueryDocumentSnapshot> _applyFilterAndSort(
+    List<QueryDocumentSnapshot> docs,
+  ) {
     // Filter
     List<QueryDocumentSnapshot> filtered;
     if (_selectedFilter == 'All') {
@@ -151,30 +181,52 @@ class _DashboardPageState extends State<DashboardPage> {
     final sorted = List<QueryDocumentSnapshot>.from(filtered);
     switch (_selectedSort) {
       case 'Most Urgent':
-        sorted.sort((a, b) => _urgencyRank(a['urgency'] ?? '')
-            .compareTo(_urgencyRank(b['urgency'] ?? '')));
+        sorted.sort((a, b) {
+          final da = a.data() as Map<String, dynamic>;
+          final db = b.data() as Map<String, dynamic>;
+          return _urgencyRank(
+            da['urgency'] ?? '',
+          ).compareTo(_urgencyRank(db['urgency'] ?? ''));
+        });
         break;
       case 'Nearest':
         sorted.sort((a, b) {
-          final da = _distanceKm(a['lat'] ?? 0, a['lng'] ?? 0);
-          final db = _distanceKm(b['lat'] ?? 0, b['lng'] ?? 0);
-          return da.compareTo(db);
+          final da = a.data() as Map<String, dynamic>;
+          final db = b.data() as Map<String, dynamic>;
+          final distA = _distanceKm(
+            (da['lat'] ?? 0).toDouble(),
+            (da['lng'] ?? 0).toDouble(),
+          );
+          final distB = _distanceKm(
+            (db['lat'] ?? 0).toDouble(),
+            (db['lng'] ?? 0).toDouble(),
+          );
+          return distA.compareTo(distB);
         });
         break;
       case 'Unassigned Only':
-        return sorted.where((d) => (d['status'] ?? 'unassigned') == 'unassigned').toList();
+        return sorted.where((d) {
+          final data = d.data() as Map<String, dynamic>;
+          return (data['status'] ?? 'unassigned') == 'unassigned';
+        }).toList();
       case 'Latest':
       default:
         sorted.sort((a, b) {
-          final ta = (a['timestamp'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
-          final tb = (b['timestamp'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+          final ta =
+              (a['timestamp'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+          final tb =
+              (b['timestamp'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
           return tb.compareTo(ta);
         });
     }
     return sorted;
   }
 
-  void _showReportDetail(BuildContext context, Map<String, dynamic> data, String docId) {
+  void _showReportDetail(
+    BuildContext context,
+    Map<String, dynamic> data,
+    String docId,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -203,16 +255,17 @@ class _DashboardPageState extends State<DashboardPage> {
           .orderBy('timestamp', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) return const Center(child: Text('Something went wrong'));
+        if (snapshot.hasError)
+          return const Center(child: Text('Something went wrong'));
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
         final allDocs = snapshot.data!.docs;
-        final total  = allDocs.length;
-        final high   = allDocs.where((d) => d['urgency'] == 'High').length;
+        final total = allDocs.length;
+        final high = allDocs.where((d) => d['urgency'] == 'High').length;
         final medium = allDocs.where((d) => d['urgency'] == 'Medium').length;
-        final low    = allDocs.where((d) => d['urgency'] == 'Low').length;
+        final low = allDocs.where((d) => d['urgency'] == 'Low').length;
 
         final displayDocs = _applyFilterAndSort(allDocs);
 
@@ -228,22 +281,33 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Live Reports',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                                fontSize: 22, fontWeight: FontWeight.bold)),
+                        Text(
+                          'Live Reports',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        Text('$total active reports',
-                            style: theme.textTheme.bodyMedium),
+                        Text(
+                          '$total active reports',
+                          style: theme.textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   ),
                   if (_fetchingLocation)
                     const SizedBox(
-                      width: 16, height: 16,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   else if (_userPosition != null)
-                    Icon(Icons.location_on, size: 16, color: theme.colorScheme.primary)
+                    Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    )
                   else
                     IconButton(
                       icon: const Icon(Icons.location_off_outlined),
@@ -257,13 +321,37 @@ class _DashboardPageState extends State<DashboardPage> {
               // Filter chips
               Row(
                 children: [
-                  _FilterChip(label: 'All',    count: total,  color: theme.colorScheme.primary,   isSelected: _selectedFilter == 'All',    onTap: () => setState(() => _selectedFilter = 'All')),
+                  _FilterChip(
+                    label: 'All',
+                    count: total,
+                    color: theme.colorScheme.primary,
+                    isSelected: _selectedFilter == 'All',
+                    onTap: () => setState(() => _selectedFilter = 'All'),
+                  ),
                   const SizedBox(width: 8),
-                  _FilterChip(label: 'High',   count: high,   color: const Color(0xFFEF4444),      isSelected: _selectedFilter == 'High',   onTap: () => setState(() => _selectedFilter = 'High')),
+                  _FilterChip(
+                    label: 'High',
+                    count: high,
+                    color: const Color(0xFFEF4444),
+                    isSelected: _selectedFilter == 'High',
+                    onTap: () => setState(() => _selectedFilter = 'High'),
+                  ),
                   const SizedBox(width: 8),
-                  _FilterChip(label: 'Medium', count: medium, color: const Color(0xFFF59E0B),      isSelected: _selectedFilter == 'Medium', onTap: () => setState(() => _selectedFilter = 'Medium')),
+                  _FilterChip(
+                    label: 'Medium',
+                    count: medium,
+                    color: const Color(0xFFF59E0B),
+                    isSelected: _selectedFilter == 'Medium',
+                    onTap: () => setState(() => _selectedFilter = 'Medium'),
+                  ),
                   const SizedBox(width: 8),
-                  _FilterChip(label: 'Low',    count: low,    color: const Color(0xFF22C55E),      isSelected: _selectedFilter == 'Low',    onTap: () => setState(() => _selectedFilter = 'Low')),
+                  _FilterChip(
+                    label: 'Low',
+                    count: low,
+                    color: const Color(0xFF22C55E),
+                    isSelected: _selectedFilter == 'Low',
+                    onTap: () => setState(() => _selectedFilter = 'Low'),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -280,7 +368,10 @@ class _DashboardPageState extends State<DashboardPage> {
                         onTap: () => setState(() => _selectedSort = opt),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 7,
+                          ),
                           decoration: BoxDecoration(
                             color: selected
                                 ? theme.colorScheme.primary
@@ -295,7 +386,9 @@ class _DashboardPageState extends State<DashboardPage> {
                           child: Text(
                             opt,
                             style: TextStyle(
-                              color: selected ? Colors.white : theme.colorScheme.primary,
+                              color: selected
+                                  ? Colors.white
+                                  : theme.colorScheme.primary,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -314,10 +407,16 @@ class _DashboardPageState extends State<DashboardPage> {
                     padding: const EdgeInsets.only(top: 60),
                     child: Column(
                       children: [
-                        Icon(Icons.inbox_outlined, size: 48,
-                            color: theme.colorScheme.primary.withOpacity(0.4)),
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 48,
+                          color: theme.colorScheme.primary.withOpacity(0.4),
+                        ),
                         const SizedBox(height: 12),
-                        Text('No reports found', style: theme.textTheme.bodyMedium),
+                        Text(
+                          'No reports found',
+                          style: theme.textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   ),
@@ -329,17 +428,17 @@ class _DashboardPageState extends State<DashboardPage> {
                   itemCount: displayDocs.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    final doc  = displayDocs[index];
+                    final doc = displayDocs[index];
                     final data = doc.data() as Map<String, dynamic>;
-                    final urgency   = data['urgency']   ?? 'Low';
+                    final urgency = data['urgency'] ?? 'Low';
                     final issueType = data['issueType'] ?? 'Other';
                     final description = data['description'] ?? '';
-                    final lat    = data['lat'] as double?;
-                    final lng    = data['lng'] as double?;
+                    final lat = data['lat'] as double?;
+                    final lng = data['lng'] as double?;
                     final status = data['status'] ?? 'unassigned';
                     final timestamp = data['timestamp'] as Timestamp?;
                     final urgencyColor = _urgencyColor(urgency);
-                    final statusColor  = _statusColor(status);
+                    final statusColor = _statusColor(status);
 
                     return Card(
                       child: InkWell(
@@ -355,17 +454,25 @@ class _DashboardPageState extends State<DashboardPage> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: theme.colorScheme.primary.withOpacity(0.1),
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: Icon(_issueIcon(issueType),
-                                        color: theme.colorScheme.primary, size: 20),
+                                    child: Icon(
+                                      _issueIcon(issueType),
+                                      color: theme.colorScheme.primary,
+                                      size: 20,
+                                    ),
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
-                                    child: Text(issueType,
-                                        style: theme.textTheme.bodyLarge
-                                            ?.copyWith(fontWeight: FontWeight.w600)),
+                                    child: Text(
+                                      issueType,
+                                      style: theme.textTheme.bodyLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
                                   ),
                                   // Urgency badge
                                   _Badge(
@@ -377,22 +484,33 @@ class _DashboardPageState extends State<DashboardPage> {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              Text(description,
-                                  style: theme.textTheme.bodyMedium,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis),
+                              Text(
+                                description,
+                                style: theme.textTheme.bodyMedium,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               const SizedBox(height: 10),
                               Row(
                                 children: [
-                                  Icon(Icons.location_on_outlined, size: 14,
-                                      color: theme.textTheme.bodyMedium?.color),
+                                  Icon(
+                                    Icons.location_on_outlined,
+                                    size: 14,
+                                    color: theme.textTheme.bodyMedium?.color,
+                                  ),
                                   const SizedBox(width: 4),
-                                  Text(_distanceLabel(lat, lng),
-                                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12)),
+                                  Text(
+                                    _distanceLabel(lat, lng),
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                   const Spacer(),
                                   // Status badge
                                   _Badge(
-                                    label: status[0].toUpperCase() + status.substring(1),
+                                    label:
+                                        status[0].toUpperCase() +
+                                        status.substring(1),
                                     color: statusColor,
                                     icon: _statusIcon(status),
                                     iconSize: 12,
@@ -402,14 +520,24 @@ class _DashboardPageState extends State<DashboardPage> {
                               const SizedBox(height: 6),
                               Row(
                                 children: [
-                                  Icon(Icons.access_time, size: 13,
-                                      color: theme.textTheme.bodyMedium?.color),
+                                  Icon(
+                                    Icons.access_time,
+                                    size: 13,
+                                    color: theme.textTheme.bodyMedium?.color,
+                                  ),
                                   const SizedBox(width: 4),
-                                  Text(_timeAgo(timestamp),
-                                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12)),
+                                  Text(
+                                    _timeAgo(timestamp),
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                   const Spacer(),
-                                  Icon(Icons.chevron_right, size: 18,
-                                      color: theme.textTheme.bodyMedium?.color),
+                                  Icon(
+                                    Icons.chevron_right,
+                                    size: 18,
+                                    color: theme.textTheme.bodyMedium?.color,
+                                  ),
                                 ],
                               ),
                             ],
@@ -473,16 +601,16 @@ class _ReportDetailSheet extends StatelessWidget {
         'status': 'assigned',
       });
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Task accepted!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Task accepted!')));
         Navigator.pop(context);
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -516,7 +644,8 @@ class _ReportDetailSheet extends StatelessWidget {
             // Drag handle
             Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: Colors.grey.withOpacity(0.4),
                 borderRadius: BorderRadius.circular(2),
@@ -536,23 +665,39 @@ class _ReportDetailSheet extends StatelessWidget {
                           color: theme.colorScheme.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(issueIcon, color: theme.colorScheme.primary, size: 24),
+                        child: Icon(
+                          issueIcon,
+                          color: theme.colorScheme.primary,
+                          size: 24,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(data['issueType'] ?? 'Other',
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                    fontSize: 18, fontWeight: FontWeight.bold)),
-                            Text(timeAgo,
-                                style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12)),
+                            Text(
+                              data['issueType'] ?? 'Other',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              timeAgo,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      _Badge(label: data['urgency'] ?? 'Low', color: urgencyColor,
-                          icon: Icons.circle, iconSize: 8),
+                      _Badge(
+                        label: data['urgency'] ?? 'Low',
+                        color: urgencyColor,
+                        icon: Icons.circle,
+                        iconSize: 8,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -564,15 +709,25 @@ class _ReportDetailSheet extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         _status[0].toUpperCase() + _status.substring(1),
-                        style: TextStyle(color: statusColor,
-                            fontSize: 13, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      Icon(Icons.location_on_outlined, size: 14,
-                          color: theme.textTheme.bodyMedium?.color),
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 14,
+                        color: theme.textTheme.bodyMedium?.color,
+                      ),
                       const SizedBox(width: 4),
-                      Text(distanceLabel,
-                          style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+                      Text(
+                        distanceLabel,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -580,8 +735,10 @@ class _ReportDetailSheet extends StatelessWidget {
                   // Description
                   _DetailSection(
                     title: 'Description',
-                    child: Text(data['description'] ?? '',
-                        style: theme.textTheme.bodyMedium?.copyWith(height: 1.5)),
+                    child: Text(
+                      data['description'] ?? '',
+                      style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                    ),
                   ),
                   const SizedBox(height: 20),
 
@@ -592,8 +749,12 @@ class _ReportDetailSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (lat != null && lng != null) ...[
-                          Text('Lat: ${lat.toStringAsFixed(6)},  Lng: ${lng.toStringAsFixed(6)}',
-                              style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+                          Text(
+                            'Lat: ${lat.toStringAsFixed(6)},  Lng: ${lng.toStringAsFixed(6)}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontSize: 13,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
@@ -602,16 +763,24 @@ class _ReportDetailSheet extends StatelessWidget {
                               '?center=$lat,$lng&zoom=15&size=600x200'
                               '&markers=color:red%7C$lat,$lng'
                               '&key=YOUR_GOOGLE_MAPS_API_KEY',
-                              height: 180, width: double.infinity, fit: BoxFit.cover,
+                              height: 180,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Container(
                                 height: 180,
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary.withOpacity(0.08),
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.08,
+                                  ),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Center(
-                                  child: Text('Add API key to enable map preview',
-                                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12)),
+                                  child: Text(
+                                    'Add API key to enable map preview',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -622,9 +791,13 @@ class _ReportDetailSheet extends StatelessWidget {
                             child: OutlinedButton.icon(
                               onPressed: () async {
                                 final uri = Uri.parse(
-                                    'https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+                                  'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+                                );
                                 if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  await launchUrl(
+                                    uri,
+                                    mode: LaunchMode.externalApplication,
+                                  );
                                 }
                               },
                               icon: const Icon(Icons.open_in_new, size: 16),
@@ -632,7 +805,10 @@ class _ReportDetailSheet extends StatelessWidget {
                             ),
                           ),
                         ] else
-                          Text('No location data', style: theme.textTheme.bodyMedium),
+                          Text(
+                            'No location data',
+                            style: theme.textTheme.bodyMedium,
+                          ),
                       ],
                     ),
                   ),
@@ -640,9 +816,13 @@ class _ReportDetailSheet extends StatelessWidget {
 
                   _DetailSection(
                     title: 'Report ID',
-                    child: Text(docId,
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(fontSize: 12, fontFamily: 'monospace')),
+                    child: Text(
+                      docId,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 12,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 28),
 
@@ -653,15 +833,25 @@ class _ReportDetailSheet extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withOpacity(0.06),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+                        border: Border.all(
+                          color: theme.colorScheme.primary.withOpacity(0.2),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.lock_outline, size: 16, color: theme.colorScheme.primary),
+                          Icon(
+                            Icons.lock_outline,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: Text('Only verified NGO volunteers can accept tasks.',
-                                style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+                            child: Text(
+                              'Only verified NGO volunteers can accept tasks.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -672,15 +862,24 @@ class _ReportDetailSheet extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFF22C55E).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.3)),
+                        border: Border.all(
+                          color: const Color(0xFF22C55E).withOpacity(0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.check_circle_outline,
-                              size: 18, color: Color(0xFF22C55E)),
+                          const Icon(
+                            Icons.check_circle_outline,
+                            size: 18,
+                            color: Color(0xFF22C55E),
+                          ),
                           const SizedBox(width: 10),
-                          Text('This task has been completed.',
-                              style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+                          Text(
+                            'This task has been completed.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                     )
@@ -694,7 +893,7 @@ class _ReportDetailSheet extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF22C55E),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.all(14.0),
                         ),
                       ),
                     )
@@ -737,7 +936,10 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
 
   Future<void> _pickPhoto() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
     if (picked != null) setState(() => _photo = File(picked.path));
   }
 
@@ -749,9 +951,9 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
       return;
     }
     if (_noteController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add a note')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please add a note')));
       return;
     }
 
@@ -760,8 +962,9 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
 
     try {
       // Upload photo to Firebase Storage
-      final ref = FirebaseStorage.instance
-          .ref('proofs/${widget.docId}/$uid-${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final ref = FirebaseStorage.instance.ref(
+        'proofs/${widget.docId}/$uid-${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
       await ref.putFile(_photo!);
       final photoUrl = await ref.getDownloadURL();
 
@@ -771,11 +974,11 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
           .doc(widget.docId)
           .collection('proofs')
           .add({
-        'volunteerId': uid,
-        'photoUrl': photoUrl,
-        'note': _noteController.text.trim(),
-        'submittedAt': FieldValue.serverTimestamp(),
-      });
+            'volunteerId': uid,
+            'photoUrl': photoUrl,
+            'note': _noteController.text.trim(),
+            'submittedAt': FieldValue.serverTimestamp(),
+          });
 
       // Update report status
       await FirebaseFirestore.instance
@@ -785,15 +988,18 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Proof submitted! Task marked as completed.')),
+          const SnackBar(
+            content: Text('Proof submitted! Task marked as completed.'),
+          ),
         );
         Navigator.pop(context); // close proof sheet
         Navigator.pop(context); // close detail sheet
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -811,7 +1017,9 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         decoration: BoxDecoration(
@@ -824,7 +1032,8 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: Colors.grey.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(2),
@@ -832,9 +1041,13 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            Text('Submit Completion Proof',
-                style: theme.textTheme.bodyLarge
-                    ?.copyWith(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Submit Completion Proof',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 20),
 
             // Photo picker
@@ -859,11 +1072,18 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add_photo_alternate_outlined,
-                              size: 36, color: theme.colorScheme.primary.withOpacity(0.5)),
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 36,
+                            color: theme.colorScheme.primary.withOpacity(0.5),
+                          ),
                           const SizedBox(height: 8),
-                          Text('Tap to attach photo',
-                              style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+                          Text(
+                            'Tap to attach photo',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
               ),
@@ -892,7 +1112,10 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
                 ),
                 child: _submitting
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Submit Proof', style: TextStyle(fontSize: 16)),
+                    : const Text(
+                        'Submit Proof',
+                        style: TextStyle(fontSize: 16),
+                      ),
               ),
             ),
           ],
@@ -905,7 +1128,12 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
 // ─── Shared small widgets ─────────────────────────────────────────────────────
 
 class _Badge extends StatelessWidget {
-  const _Badge({required this.label, required this.color, required this.icon, required this.iconSize});
+  const _Badge({
+    required this.label,
+    required this.color,
+    required this.icon,
+    required this.iconSize,
+  });
   final String label;
   final Color color;
   final IconData icon;
@@ -925,7 +1153,14 @@ class _Badge extends StatelessWidget {
         children: [
           Icon(icon, size: iconSize, color: color),
           const SizedBox(width: 5),
-          Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -933,8 +1168,13 @@ class _Badge extends StatelessWidget {
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.count, required this.color,
-      required this.isSelected, required this.onTap});
+  const _FilterChip({
+    required this.label,
+    required this.count,
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
   final String label;
   final int count;
   final Color color;
@@ -959,13 +1199,23 @@ class _FilterChip extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Text('$count', style: TextStyle(
+              Text(
+                '$count',
+                style: TextStyle(
                   color: isSelected ? Colors.white : color,
-                  fontSize: 18, fontWeight: FontWeight.bold)),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(label, style: TextStyle(
+              Text(
+                label,
+                style: TextStyle(
                   color: isSelected ? Colors.white : color,
-                  fontSize: 11, fontWeight: FontWeight.w500)),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),
@@ -985,9 +1235,15 @@ class _DetailSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title.toUpperCase(), style: TextStyle(
-            fontSize: 11, fontWeight: FontWeight.w700,
-            letterSpacing: 1.2, color: theme.colorScheme.primary)),
+        Text(
+          title.toUpperCase(),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+            color: theme.colorScheme.primary,
+          ),
+        ),
         const SizedBox(height: 6),
         child,
       ],

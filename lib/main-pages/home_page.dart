@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:reliefnet/pages/dashboard_page.dart';
-import 'package:reliefnet/pages/profile_page.dart';
-import 'package:reliefnet/pages/report_page.dart';
-import 'package:reliefnet/pages/settings_page.dart';
-import 'package:reliefnet/pages/volunteer_page.dart';
+import 'package:reliefnet/main-pages/dashboard_page.dart';
+import 'package:reliefnet/secondary-pages/profile_page.dart';
+import 'package:reliefnet/main-pages/report_page.dart';
+import 'package:reliefnet/secondary-pages/settings_page.dart';
+import 'package:reliefnet/main-pages/volunteer_page.dart';
+import 'package:reliefnet/main-pages/apply_volunteer_page.dart';
 import 'package:reliefnet/components/appBar.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -35,12 +36,12 @@ class _HomepageState extends State<Homepage> {
           .doc(user.uid)
           .snapshots()
           .listen((doc) {
-        if (doc.exists && mounted) {
-          setState(() {
-            _isVolunteer = doc.data()?['isVolunteer'] ?? false;
+            if (doc.exists && mounted) {
+              setState(() {
+                _isVolunteer = doc.data()?['isVolunteer'] ?? false;
+              });
+            }
           });
-        }
-      });
     }
   }
 
@@ -49,6 +50,7 @@ class _HomepageState extends State<Homepage> {
     ReportPage(),
     DashboardPage(),
     VolunteerPage(),
+    ApplyVolunteerPage(),
     ProfilePage(),
     SettingsPage(),
   ];
@@ -58,6 +60,7 @@ class _HomepageState extends State<Homepage> {
     'Report Issue',
     'Dashboard',
     'Volunteer',
+    'Application status',
     'Profile',
     'Settings',
   ];
@@ -95,6 +98,7 @@ class _HomepageState extends State<Homepage> {
             /// 🔹 Main Items
             _buildTile(Icons.home_outlined, "Home", 0, textTheme),
             _buildTile(Icons.report_outlined, "Report", 1, textTheme),
+
             if (_isVolunteer) ...[
               _buildTile(Icons.dashboard_outlined, "Dashboard", 2, textTheme),
               _buildTile(Icons.help_outline, "Volunteer", 3, textTheme),
@@ -102,16 +106,13 @@ class _HomepageState extends State<Homepage> {
               ListTile(
                 leading: const Icon(Icons.volunteer_activism_outlined),
                 title: Text("Apply as Volunteer", style: textTheme.bodyMedium),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/apply_volunteer');
-                },
+                selected: selectedindex == 4, // Highlight when index is 4
+                onTap: () => _navigate(4), // Navigate to index 4
               ),
 
-            /// 🔹 Secondary Items
-            _buildTile(Icons.person_outline, "Profile", 4, textTheme),
-            _buildTile(Icons.settings_outlined, "Settings", 5, textTheme),
-
+            /// 🔹 Secondary Items (Updated Indices)
+            _buildTile(Icons.person_outline, "Profile", 5, textTheme),
+            _buildTile(Icons.settings_outlined, "Settings", 6, textTheme),
             const Spacer(),
 
             /// 🔹 Logout

@@ -3,11 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'package:reliefnet/pages/apply_volunteer_page.dart';
-import 'package:reliefnet/pages/dashboard_page.dart';
-import 'package:reliefnet/pages/home_page.dart';
-import 'package:reliefnet/pages/report_page.dart';
-import 'package:reliefnet/pages/volunteer_page.dart';
+import 'package:reliefnet/main-pages/apply_volunteer_page.dart';
+import 'package:reliefnet/main-pages/dashboard_page.dart';
+import 'package:reliefnet/main-pages/home_page.dart';
+import 'package:reliefnet/main-pages/report_page.dart';
+import 'package:reliefnet/main-pages/volunteer_page.dart';
 import 'package:reliefnet/login-signup/login_page.dart';
 import 'package:reliefnet/themes/theme_light.dart';
 import 'package:reliefnet/themes/theme_dark.dart';
