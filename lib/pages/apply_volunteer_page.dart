@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -172,15 +173,37 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.blue.shade300),
                         ),
-                        child: Text(
-                          volunteerId.toString(),
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 4,
-                            fontFamily: 'monospace',
-                            color: Colors.blue,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              volunteerId.toString(),
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 4,
+                                fontFamily: 'monospace',
+                                color: Colors.blue,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            IconButton(
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(
+                                        text: volunteerId.toString()))
+                                    .then((_) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("UID copied to clipboard!"),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                });
+                              },
+                              icon: const Icon(Icons.copy, color: Colors.blue),
+                              tooltip: "Copy UID",
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 24),
