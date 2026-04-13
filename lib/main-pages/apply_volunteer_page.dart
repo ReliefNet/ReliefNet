@@ -170,12 +170,15 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                         onTap: () {
                           // This is the core logic
                           Clipboard.setData(
-                            ClipboardData(text: "Text to copy"),
+                            ClipboardData(text: volunteerId.toString()),
                           );
 
                           // Optional: Show a SnackBar to let the user know it worked
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Copied to clipboard!")),
+                            const SnackBar(
+                              content: Text("Copied to clipboard!"),
+                              duration: Duration(seconds: 2),
+                            ),
                           );
                         },
                         child: Container(
@@ -194,7 +197,6 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 4,
-                              fontFamily: 'monospace',
                               color: Colors.blue,
                             ),
                           ),
@@ -227,7 +229,7 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
                     ],
                     const SizedBox(height: 40),
                     ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pushNamed(context, '/home'),
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: const Text("Back to Home"),
