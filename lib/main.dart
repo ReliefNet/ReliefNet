@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'package:reliefnet/main-pages/apply_volunteer_page.dart';
 import 'package:reliefnet/main-pages/dashboard_page.dart';
 import 'package:reliefnet/main-pages/home_page.dart';
@@ -16,7 +15,7 @@ import 'package:reliefnet/themes/theme_provider.dart';
 Future<void> main() async {
   // Ensure native bindings are ready
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Firebase
   await Firebase.initializeApp();
 
@@ -24,10 +23,7 @@ Future<void> main() async {
   final themeProvider = ThemeProvider();
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => themeProvider,
-      child: const MyApp(),
-    ),
+    ChangeNotifierProvider(create: (_) => themeProvider, child: const MyApp()),
   );
 }
 
@@ -50,6 +46,7 @@ class MyApp extends StatelessWidget {
 
       /// ROUTES
       routes: {
+        '/home': (context) => const Homepage(),
         '/report': (context) => const ReportPage(),
         '/dashboard': (context) => const DashboardPage(),
         '/volunteer': (context) => const VolunteerPage(),
