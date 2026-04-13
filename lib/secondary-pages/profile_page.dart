@@ -212,10 +212,21 @@ class _ProfilePageState extends State<ProfilePage>
     try {
       String? imageUrl;
       if (_image != null) {
-        final ref = FirebaseStorage.instance
-            .ref('profile_pics/$uid.jpg');
-        await ref.putFile(_image!);
-        imageUrl = await ref.getDownloadURL();
+        debugPrint('Uploading image for UID: $uid');
+        try {
+          final ref = FirebaseStorage.instance
+              .ref('profile_pics/$uid.jpg');
+          
+          // Use putFile with metadata for better compatibility
+          final metadata = SettableMetadata(contentType: 'image/jpeg');
+          await ref.putFile(_image!, metadata);
+          
+          imageUrl = await ref.getDownloadURL();
+          debugPrint('Upload successful! URL: $imageUrl');
+        } catch (storageError) {
+          debugPrint('Firebase Storage Error: $storageError');
+          throw 'Failed to upload image. Please check your Firebase Storage rules.';
+        }
       }
 
       final data = <String, dynamic>{
@@ -237,7 +248,8 @@ class _ProfilePageState extends State<ProfilePage>
         _snack('Profile updated!');
       }
     } catch (e) {
-      _snack('Error: $e');
+      debugPrint('Save Profile Error: $e');
+      _snack(e.toString());
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

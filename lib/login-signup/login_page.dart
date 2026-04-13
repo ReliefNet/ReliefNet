@@ -104,19 +104,15 @@ class _LoginPageState extends State<LoginPage> {
     try {
       setState(() => _isLoading = true);
 
-      final googleSignIn = GoogleSignIn();
+      final googleSignIn = GoogleSignIn.instance;
+      await googleSignIn.initialize();
+      final googleUser = await googleSignIn.authenticate();
 
-      final googleUser = await googleSignIn.signIn();
-
-      if (googleUser == null) {
-        setState(() => _isLoading = false);
-        return; // user cancelled
-      }
-
-      final googleAuth = await googleUser.authentication;
+      final googleAuth = googleUser.authentication;
+      final googleAuthz = await googleUser.authorizationClient.authorizeScopes([]);
 
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
+        accessToken: googleAuthz.accessToken,
         idToken: googleAuth.idToken,
       );
 
