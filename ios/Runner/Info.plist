@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>NSCameraUsageDescription</key>
+    <string>To capture photos/videos for issue reports</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>To attach media to your report</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>To record video audio for reports</string>
     <key>LSApplicationQueriesSchemes</key>
     <array>
     <string>mailto</string>
