@@ -243,7 +243,6 @@ class _ApplyVolunteerPageState extends State<ApplyVolunteerPage> {
         }
 
         return Scaffold(
-          appBar: AppBar(title: const Text("Apply as Volunteer")),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(

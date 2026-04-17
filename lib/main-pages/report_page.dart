@@ -458,45 +458,61 @@ class _ReportPageState extends State<ReportPage> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Report an Issue',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+
+            // ── Header ────────────────────────────────────────────────────
+            Text('Report an Issue', style: textTheme.bodyLarge),
+            Text(
+              'Fill in the details below and we\'ll dispatch help quickly.',
+              style: textTheme.bodySmall,
             ),
             const SizedBox(height: 24),
 
-            const Text('Issue Type'),
+            // ── Issue Type ────────────────────────────────────────────────
+            _FieldLabel(label: 'Issue Type', icon: Icons.category_outlined),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _issueType,
-              hint: const Text('Select issue type'),
-              items: _issueTypes
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
+              hint: Text('Select issue type', style: textTheme.bodySmall),
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.help_outline_rounded),
+              ),
+              items: _issueTypes.map((e) {
+                return DropdownMenuItem(
+                  value: e,
+                  child: Text(e),
+                );
+              }).toList(),
               onChanged: (val) => setState(() => _issueType = val),
-              validator: (val) =>
-                  val == null ? 'Please select an issue type' : null,
+              validator: (val) => val == null ? 'Please select an issue type' : null,
               onSaved: (val) => _issueType = val,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            const Text('Urgency'),
+            // ── Urgency ───────────────────────────────────────────────────
+            _FieldLabel(label: 'Urgency Level', icon: Icons.priority_high_rounded),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _urgency,
-              hint: const Text('Select urgency level'),
+              hint: Text('Select urgency', style: textTheme.bodySmall),
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.flag_outlined),
+              ),
               items: _urgencyLevels.map((e) {
                 return DropdownMenuItem(
                   value: e,
                   child: Row(
                     children: [
-                      Icon(Icons.circle, color: _getUrgencyColor(e), size: 14),
+                      Icon(Icons.circle, color: _getUrgencyColor(e), size: 10),
                       const SizedBox(width: 10),
                       Text(e),
                     ],
@@ -507,40 +523,46 @@ class _ReportPageState extends State<ReportPage> {
               validator: (val) => val == null ? 'Please select urgency' : null,
               onSaved: (val) => _urgency = val,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            const Text('Location'),
+            // ── Location ──────────────────────────────────────────────────
+            _FieldLabel(label: 'Location', icon: Icons.location_on_outlined),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
                     readOnly: true,
-                    decoration: const InputDecoration(
-                      hintText: 'Fetch your location',
-                      border: OutlineInputBorder(),
+                    style: textTheme.bodyMedium,
+                    decoration: InputDecoration(
+                      hintText: 'Tap to fetch your location',
+                      prefixIcon: Icon(
+                        _latitude != null ? Icons.location_on : Icons.location_off_outlined,
+                        color: _latitude != null ? colorScheme.primary : null,
+                      ),
                     ),
                     controller: TextEditingController(text: _locationText),
-                    validator: (val) =>
-                        _latitude == null ? 'Please fetch location' : null,
+                    validator: (val) => _latitude == null ? 'Please fetch location' : null,
                   ),
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   onPressed: _isFetchingLocation ? null : _getLocation,
                   child: _isFetchingLocation
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.my_location),
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.my_location_rounded),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            // ── MEDIA SECTION ─────────────────────────────────────────────
+            // ── Media ─────────────────────────────────────────────────────
+            _FieldLabel(label: 'Photos / Videos', icon: Icons.photo_library_outlined),
+            const SizedBox(height: 8),
             FormField<List<XFile>>(
               initialValue: _mediaFiles,
               validator: (files) {
@@ -553,16 +575,9 @@ class _ReportPageState extends State<ReportPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Text('Photos / Videos'),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
                     if (_mediaFiles.isNotEmpty) ...[
                       SizedBox(
-                        height: 100,
+                        height: 110,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _mediaFiles.length,
@@ -572,45 +587,32 @@ class _ReportPageState extends State<ReportPage> {
                             return Stack(
                               children: [
                                 ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                   child: isVid
                                       ? Container(
-                                          width: 100,
-                                          height: 100,
+                                          width: 110,
+                                          height: 110,
                                           color: Colors.black12,
-                                          child: const Icon(
-                                            Icons.videocam,
-                                            size: 40,
-                                            color: Colors.black45,
-                                          ),
+                                          child: const Icon(Icons.videocam_rounded, size: 40, color: Colors.black45),
                                         )
                                       : Image.file(
                                           File(_mediaFiles[i].path),
-                                          width: 100,
-                                          height: 100,
+                                          width: 110,
+                                          height: 110,
                                           fit: BoxFit.cover,
                                         ),
                                 ),
                                 Positioned(
-                                  top: 2,
-                                  right: 2,
+                                  top: 4,
+                                  right: 4,
                                   child: GestureDetector(
                                     onTap: () {
                                       _removeMedia(i);
-                                      field.didChange(
-                                        _mediaFiles,
-                                      ); // Updates the validator
+                                      field.didChange(_mediaFiles);
                                     },
                                     child: Container(
-                                      decoration: const BoxDecoration(
-                                        color: Colors.black54,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
+                                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                      child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
                                     ),
                                   ),
                                 ),
@@ -619,75 +621,76 @@ class _ReportPageState extends State<ReportPage> {
                           },
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                     ],
 
                     OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        side: field.hasError
+                            ? const BorderSide(color: Colors.red, width: 1.5)
+                            : BorderSide(color: colorScheme.primary.withOpacity(0.4)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      ),
                       onPressed: _mediaFiles.length >= 5
                           ? null
                           : () async {
                               await _pickMedia();
-                              field.didChange(
-                                _mediaFiles,
-                              ); // Tells the form to re-check the list
+                              field.didChange(_mediaFiles);
                             },
-                      style: OutlinedButton.styleFrom(
-                        side: field.hasError
-                            ? const BorderSide(color: Colors.red, width: 2)
-                            : null,
-                      ),
-                      icon: const Icon(Icons.add_a_photo),
+                      icon: const Icon(Icons.add_a_photo_outlined),
                       label: Text(
-                        _mediaFiles.isEmpty
-                            ? 'Add Photo / Video'
-                            : 'Add More (${_mediaFiles.length}/5)',
+                        _mediaFiles.isEmpty ? 'Add Photo / Video' : 'Add More (${_mediaFiles.length}/5)',
                       ),
                     ),
 
-                    // This displays the red error text if validation fails
                     if (field.hasError)
                       Padding(
-                        padding: const EdgeInsets.only(top: 8, left: 12),
+                        padding: const EdgeInsets.only(top: 6, left: 12),
                         child: Text(
                           field.errorText!,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 12,
-                          ),
+                          style: const TextStyle(color: Colors.red, fontSize: 12),
                         ),
                       ),
                   ],
                 );
               },
             ),
-            // ─────────────────────────────────────────────────────────────
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            const Text('Description'),
+            // ── Description ───────────────────────────────────────────────
+            _FieldLabel(label: 'Description', icon: Icons.description_outlined),
             const SizedBox(height: 8),
             TextFormField(
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: textTheme.bodyMedium,
               maxLines: 4,
               decoration: const InputDecoration(
-                hintText: 'Describe the issue...',
-                border: OutlineInputBorder(),
+                hintText: 'Describe the situation in detail...',
+                alignLabelWithHint: true,
               ),
-              validator: (val) => val == null || val.isEmpty
-                  ? 'Please enter a description'
-                  : null,
+              validator: (val) => val == null || val.isEmpty ? 'Please enter a description' : null,
               onSaved: (val) => _description = val!,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
+            // ── Submit Button ─────────────────────────────────────────────
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
                 onPressed: _isSubmitting ? null : _submitForm,
                 child: _isSubmitting
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Submit Report',
-                        style: TextStyle(fontSize: 16),
+                    ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.send_rounded),
+                          SizedBox(width: 8),
+                          Text('Submit Report', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ],
                       ),
               ),
             ),
@@ -697,3 +700,25 @@ class _ReportPageState extends State<ReportPage> {
     );
   }
 }
+
+// ── Field Label ───────────────────────────────────────────────────────────────
+class _FieldLabel extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  const _FieldLabel({required this.label, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
+  }
+}
+

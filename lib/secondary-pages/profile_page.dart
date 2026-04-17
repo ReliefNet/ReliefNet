@@ -467,7 +467,7 @@ class _ProfilePageState extends State<ProfilePage>
               onCompletedTap: _onCompletedStatTap,
             ),
 
-            const SizedBox(height: 28),
+            // const SizedBox(height: 28),
 
             // ── Volunteer Badge ───────────────────────────────────────────
             if (isVolunteer) ...[
