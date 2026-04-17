@@ -6,6 +6,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// Import the new pages
+import 'package:reliefnet/secondary-pages/profile_pages/submitted_reports_page.dart';
+import 'package:reliefnet/secondary-pages/profile_pages/tasks_page.dart';
+import 'package:reliefnet/secondary-pages/profile_pages/apply_volunteer_page.dart';
+
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
@@ -98,24 +103,20 @@ class _ProfilePageState extends State<ProfilePage>
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
     try {
-      // Reports submitted by this user
       final submittedSnap = await FirebaseFirestore.instance
           .collection('reports')
           .where('submittedBy', isEqualTo: uid)
           .get();
 
-      // Tasks this volunteer accepted
       final acceptedSnap = await FirebaseFirestore.instance
           .collection('reports')
           .where('assignedVolunteers', arrayContains: uid)
           .get();
 
-      // Tasks completed (proof submitted by this volunteer)
       int completed = 0;
       for (final doc in acceptedSnap.docs) {
         final data = doc.data();
         if ((data['status'] ?? '') == 'completed') {
-          // Check if this user submitted a proof
           final proofSnap = await FirebaseFirestore.instance
               .collection('reports')
               .doc(doc.id)
@@ -143,7 +144,6 @@ class _ProfilePageState extends State<ProfilePage>
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
     try {
-      // Merge submitted + accepted, sort by timestamp, take 5
       final submittedSnap = await FirebaseFirestore.instance
           .collection('reports')
           .where('submittedBy', isEqualTo: uid)
@@ -170,7 +170,6 @@ class _ProfilePageState extends State<ProfilePage>
         final d = doc.data();
         d['_docId'] = doc.id;
         d['_activityType'] = 'accepted';
-        // avoid dupes
         if (!all.any((x) => x['_docId'] == doc.id)) all.add(d);
       }
 
@@ -203,49 +202,84 @@ class _ProfilePageState extends State<ProfilePage>
   // ── Save ──────────────────────────────────────────────────────────────────
 
   Future<void> _saveProfile() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid == null) return;
 
-    if (_nameController.text.trim().isEmpty ||
-        _usernameController.text.trim().isEmpty) {
-      _snack('Name and username are required');
-      return;
-    }
+  final enteredId = _volunteerIdController.text.trim();
 
-    setState(() => _isSaving = true);
-    try {
-      String? imageUrl;
-      if (_image != null) {
-        final ref = FirebaseStorage.instance.ref('profile_pics/$uid.jpg');
-        await ref.putFile(_image!);
-        imageUrl = await ref.getDownloadURL();
-      }
-
-      final data = <String, dynamic>{
-        'name': _nameController.text.trim(),
-        'username': _usernameController.text.trim(),
-        'volunteerId': _volunteerIdController.text.trim(),
-        'isVolunteer': _volunteerIdController.text.trim().isNotEmpty,
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-      if (imageUrl != null) data['profilePic'] = imageUrl;
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .set(data, SetOptions(merge: true));
-
-      await _loadProfile();
-      if (mounted) {
-        setState(() => _isEditing = false);
-        _snack('Profile updated!');
-      }
-    } catch (e) {
-      _snack('Error: $e');
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
+  if (_nameController.text.trim().isEmpty ||
+      _usernameController.text.trim().isEmpty) {
+    _snack('Name and username are required');
+    return;
   }
+
+  setState(() => _isSaving = true);
+
+  try {
+    bool isValidVolunteer = false;
+
+    // 🔹 Only validate if user entered something
+    if (enteredId.isNotEmpty) {
+      final doc = await FirebaseFirestore.instance
+          .collection('volunteer_applications')
+          .doc(uid)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data()!;
+
+        final approved = data['status'] == 'approved';
+        final correctId = data['volunteerId'] == enteredId;
+
+        if (approved && correctId) {
+          isValidVolunteer = true;
+        } else {
+          _snack('Invalid Volunteer ID or not approved yet');
+          setState(() => _isSaving = false);
+          return;
+        }
+      } else {
+        _snack('No volunteer application found');
+        setState(() => _isSaving = false);
+        return;
+      }
+    }
+
+    // 🔹 Upload image (same as before)
+    String? imageUrl;
+    if (_image != null) {
+      final ref = FirebaseStorage.instance.ref('profile_pics/$uid.jpg');
+      await ref.putFile(_image!);
+      imageUrl = await ref.getDownloadURL();
+    }
+
+    final data = <String, dynamic>{
+      'name': _nameController.text.trim(),
+      'username': _usernameController.text.trim(),
+      'volunteerId': isValidVolunteer ? enteredId : '',
+      'isVolunteer': isValidVolunteer,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    if (imageUrl != null) data['profilePic'] = imageUrl;
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .set(data, SetOptions(merge: true));
+
+    await _loadProfile();
+
+    if (mounted) {
+      setState(() => _isEditing = false);
+      _snack('Profile updated!');
+    }
+  } catch (e) {
+    _snack('Error: $e');
+  } finally {
+    if (mounted) setState(() => _isSaving = false);
+  }
+}
 
   // ── Sign out ──────────────────────────────────────────────────────────────
 
@@ -272,6 +306,39 @@ class _ProfilePageState extends State<ProfilePage>
     }
   }
 
+  // ── Navigation helpers ────────────────────────────────────────────────────
+
+  /// Opens a volunteer-gated page. If not a volunteer, goes to ApplyVolunteerPage.
+  /// If user applies from there, reloads the profile so isVolunteer updates.
+  Future<void> _openVolunteerPage(Widget page) async {
+    final isVolunteer = _profile?['isVolunteer'] == true;
+    if (!isVolunteer) {
+      final applied = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => const ApplyVolunteerPage()),
+      );
+      if (applied == true) {
+        // Reload so the profile reflects the new volunteer status
+        await _loadAll();
+      }
+      return;
+    }
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+  }
+
+  void _onReportsStatTap() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SubmittedReportsPage()),
+    );
+  }
+
+  void _onAcceptedStatTap() {
+    _openVolunteerPage(const TasksPage(filter: TasksFilter.accepted));
+  }
+
+  void _onCompletedStatTap() {
+    _openVolunteerPage(const TasksPage(filter: TasksFilter.completed));
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   void _snack(String msg) {
@@ -293,18 +360,8 @@ class _ProfilePageState extends State<ProfilePage>
     if (user?.metadata.creationTime == null) return '';
     final dt = user!.metadata.creationTime!;
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     return 'Member since ${months[dt.month - 1]} ${dt.year}';
   }
@@ -370,7 +427,6 @@ class _ProfilePageState extends State<ProfilePage>
               onPickImage: _pickImage,
               onEditToggle: () => setState(() {
                 _isEditing = !_isEditing;
-                // Reset unsaved changes if cancelling
                 if (!_isEditing) {
                   _nameController.text = _profile?['name'] ?? '';
                   _usernameController.text = _profile?['username'] ?? '';
@@ -380,7 +436,7 @@ class _ProfilePageState extends State<ProfilePage>
               }),
             ),
 
-            // ── Edit Form (only when editing) ─────────────────────────────
+            // ── Edit Form ─────────────────────────────────────────────────
             AnimatedSize(
               duration: const Duration(milliseconds: 280),
               curve: Curves.easeInOut,
@@ -405,6 +461,10 @@ class _ProfilePageState extends State<ProfilePage>
               tasksAccepted: _tasksAccepted,
               tasksCompleted: _tasksCompleted,
               successRate: _successRate,
+              isVolunteer: isVolunteer,
+              onReportsTap: _onReportsStatTap,
+              onAcceptedTap: _onAcceptedStatTap,
+              onCompletedTap: _onCompletedStatTap,
             ),
 
             const SizedBox(height: 28),
@@ -444,7 +504,7 @@ class _ProfilePageState extends State<ProfilePage>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Profile Hero
+// Profile Hero  (unchanged from original)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ProfileHero extends StatelessWidget {
@@ -498,23 +558,16 @@ class _ProfileHero extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Avatar
               GestureDetector(
                 onTap: isEditing ? onPickImage : null,
                 child: Stack(
                   children: [
                     CircleAvatar(
                       radius: 40,
-                      backgroundColor: theme.colorScheme.primary.withOpacity(
-                        0.12,
-                      ),
+                      backgroundColor: theme.colorScheme.primary.withOpacity(0.12),
                       backgroundImage: avatarImage,
                       child: avatarImage == null
-                          ? Icon(
-                              Icons.person_rounded,
-                              size: 42,
-                              color: theme.colorScheme.primary,
-                            )
+                          ? Icon(Icons.person_rounded, size: 42, color: theme.colorScheme.primary)
                           : null,
                     ),
                     if (isEditing)
@@ -526,25 +579,15 @@ class _ProfileHero extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: theme.colorScheme.primary,
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: theme.scaffoldBackgroundColor,
-                              width: 2,
-                            ),
+                            border: Border.all(color: theme.scaffoldBackgroundColor, width: 2),
                           ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            color: Colors.white,
-                            size: 14,
-                          ),
+                          child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
                         ),
                       ),
                   ],
                 ),
               ),
-
               const SizedBox(width: 16),
-
-              // Name / username / member since
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -565,24 +608,14 @@ class _ProfileHero extends StatelessWidget {
                     ),
                     if (memberSince.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text(
-                        memberSince,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 11,
-                        ),
-                      ),
+                      Text(memberSince, style: theme.textTheme.bodySmall?.copyWith(fontSize: 11)),
                     ],
                   ],
                 ),
               ),
-
-              // Edit / Cancel button
               IconButton(
                 onPressed: onEditToggle,
-                icon: Icon(
-                  isEditing ? Icons.close_rounded : Icons.edit_outlined,
-                  size: 22,
-                ),
+                icon: Icon(isEditing ? Icons.close_rounded : Icons.edit_outlined, size: 22),
                 style: IconButton.styleFrom(
                   backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                   foregroundColor: theme.colorScheme.primary,
@@ -590,42 +623,27 @@ class _ProfileHero extends StatelessWidget {
               ),
             ],
           ),
-
-          // Volunteer chip
           if (isVolunteer) ...[
             const SizedBox(height: 14),
             Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.primary.withOpacity(0.7),
-                    ],
-                  ),
+                  gradient: LinearGradient(colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primary.withOpacity(0.7),
+                  ]),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.verified_outlined,
-                      size: 13,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(width: 5),
-                    const Text(
+                    Icon(Icons.verified_outlined, size: 13, color: Colors.white),
+                    SizedBox(width: 5),
+                    Text(
                       'Verified Volunteer',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -639,7 +657,7 @@ class _ProfileHero extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Edit Form
+// Edit Form  (unchanged from original)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _EditForm extends StatelessWidget {
@@ -670,17 +688,9 @@ class _EditForm extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _FormField(
-            controller: nameController,
-            label: 'Full Name',
-            icon: Icons.person_outline,
-          ),
+          _FormField(controller: nameController, label: 'Full Name', icon: Icons.person_outline),
           const SizedBox(height: 12),
-          _FormField(
-            controller: usernameController,
-            label: 'Username',
-            icon: Icons.alternate_email,
-          ),
+          _FormField(controller: usernameController, label: 'Username', icon: Icons.alternate_email),
           const SizedBox(height: 12),
           _FormField(
             controller: volunteerIdController,
@@ -693,18 +703,9 @@ class _EditForm extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: isSaving ? null : onSave,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               child: isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('Save Changes'),
             ),
           ),
@@ -715,12 +716,7 @@ class _EditForm extends StatelessWidget {
 }
 
 class _FormField extends StatelessWidget {
-  const _FormField({
-    required this.controller,
-    required this.label,
-    required this.icon,
-    this.hint,
-  });
+  const _FormField({required this.controller, required this.label, required this.icon, this.hint});
   final TextEditingController controller;
   final String label;
   final IconData icon;
@@ -745,7 +741,7 @@ class _FormField extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Stats Grid
+// Stats Grid  ← UPDATED: tappable cards with volunteer lock indicator
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _StatsGrid extends StatelessWidget {
@@ -754,17 +750,26 @@ class _StatsGrid extends StatelessWidget {
     required this.tasksAccepted,
     required this.tasksCompleted,
     required this.successRate,
+    required this.isVolunteer,
+    required this.onReportsTap,
+    required this.onAcceptedTap,
+    required this.onCompletedTap,
   });
 
   final int reportsSubmitted;
   final int tasksAccepted;
   final int tasksCompleted;
   final int successRate;
+  final bool isVolunteer;
+  final VoidCallback onReportsTap;
+  final VoidCallback onAcceptedTap;
+  final VoidCallback onCompletedTap;
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double dynamicRatio = screenWidth > 600 ? 1.5 : 1.1;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dynamicRatio = screenWidth > 600 ? 1.5 : 1.1;
+
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -778,24 +783,34 @@ class _StatsGrid extends StatelessWidget {
           value: '$reportsSubmitted',
           icon: Icons.description_outlined,
           color: const Color(0xFF6366F1),
+          onTap: onReportsTap,
+          // Reports are always accessible (no lock)
+          isLocked: false,
         ),
         _StatCard(
-          label: 'Tasks Accepted by user',
-          value: '$tasksAccepted',
+          label: 'Tasks Accepted',
+          value: isVolunteer ? '$tasksAccepted' : '—',
           icon: Icons.handshake_outlined,
           color: const Color(0xFFF59E0B),
+          onTap: onAcceptedTap,
+          isLocked: !isVolunteer,
         ),
         _StatCard(
           label: 'Tasks Completed',
-          value: '$tasksCompleted',
+          value: isVolunteer ? '$tasksCompleted' : '—',
           icon: Icons.check_circle_outline,
           color: const Color(0xFF22C55E),
+          onTap: onCompletedTap,
+          isLocked: !isVolunteer,
         ),
         _StatCard(
-          label: 'Success Rate (in %)',
-          value: '$successRate%',
+          label: 'Success Rate',
+          value: isVolunteer ? '$successRate%' : '—',
           icon: Icons.trending_up_rounded,
           color: const Color(0xFFEF4444),
+          // Success rate is just a derived stat, no detail page — no onTap
+          onTap: null,
+          isLocked: !isVolunteer,
         ),
       ],
     );
@@ -808,65 +823,84 @@ class _StatCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
+    required this.isLocked,
+    this.onTap,
   });
 
   final String label;
   final String value;
   final IconData icon;
   final Color color;
+  final bool isLocked;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(8),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.cardTheme.color,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: theme.shadowColor.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: 18),
                 ),
-              ),
-              Text(
-                label,
-                style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
-              ),
-            ],
-          ),
-        ],
+                const Spacer(),
+                // Lock icon for volunteer-only stats
+                if (isLocked)
+                  Icon(Icons.lock_outline_rounded, size: 14, color: theme.textTheme.bodySmall?.color?.withOpacity(0.5)),
+                // Chevron for tappable, non-locked cards
+                if (!isLocked && onTap != null)
+                  Icon(Icons.chevron_right, size: 16, color: theme.textTheme.bodySmall?.color?.withOpacity(0.4)),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isLocked ? theme.textTheme.bodySmall?.color?.withOpacity(0.4) : null,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Volunteer Badge Card
+// Volunteer Badge Card  (unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _VolunteerBadgeCard extends StatelessWidget {
@@ -891,11 +925,7 @@ class _VolunteerBadgeCard extends StatelessWidget {
               color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              Icons.verified_user_outlined,
-              color: theme.colorScheme.primary,
-              size: 22,
-            ),
+            child: Icon(Icons.verified_user_outlined, color: theme.colorScheme.primary, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -904,31 +934,21 @@ class _VolunteerBadgeCard extends StatelessWidget {
               children: [
                 Text(
                   'Volunteer ID',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 11,
-                    letterSpacing: 0.5,
-                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 11, letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   volunteerId,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, fontSize: 14),
                 ),
               ],
             ),
           ),
-          // Copy button
           IconButton(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: volunteerId));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Volunteer ID copied'),
-                  duration: Duration(seconds: 1),
-                ),
+                const SnackBar(content: Text('Volunteer ID copied'), duration: Duration(seconds: 1)),
               );
             },
             icon: const Icon(Icons.copy_outlined, size: 18),
@@ -944,7 +964,7 @@ class _VolunteerBadgeCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Activity Card
+// Activity Card  (unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ActivityCard extends StatelessWidget {
@@ -968,7 +988,6 @@ class _ActivityCard extends StatelessWidget {
     final description = data['description'] as String? ?? '';
     final status = data['status'] as String? ?? 'unassigned';
     final urgency = data['urgency'] as String? ?? 'Low';
-
     final isAccepted = activityType == 'accepted';
 
     return Container(
@@ -978,17 +997,12 @@ class _ActivityCard extends StatelessWidget {
         color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+          BoxShadow(color: theme.shadowColor.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -998,60 +1012,29 @@ class _ActivityCard extends StatelessWidget {
             child: Icon(issueIcon, color: theme.colorScheme.primary, size: 18),
           ),
           const SizedBox(width: 12),
-
-          // Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Text(
-                      issueType,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Text(issueType, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                     const SizedBox(width: 8),
-                    // Urgency dot
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: urgencyColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                    Container(width: 7, height: 7, decoration: BoxDecoration(color: urgencyColor, shape: BoxShape.circle)),
                     const SizedBox(width: 4),
-                    Text(
-                      urgency,
-                      style: TextStyle(
-                        color: urgencyColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Text(urgency, style: TextStyle(color: urgencyColor, fontSize: 11, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  description,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall,
-                ),
+                Text(description, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    // Activity type chip
                     _MiniChip(
                       label: isAccepted ? 'Accepted' : 'Submitted',
-                      color: isAccepted
-                          ? const Color(0xFF6366F1)
-                          : theme.colorScheme.primary,
+                      color: isAccepted ? const Color(0xFF6366F1) : theme.colorScheme.primary,
                     ),
                     const SizedBox(width: 6),
-                    // Status chip
                     _MiniChip(
                       label: status[0].toUpperCase() + status.substring(1),
                       color: status == 'completed'
@@ -1061,10 +1044,7 @@ class _ActivityCard extends StatelessWidget {
                           : const Color(0xFF9CA3AF),
                     ),
                     const Spacer(),
-                    Text(
-                      timeAgo,
-                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
-                    ),
+                    Text(timeAgo, style: theme.textTheme.bodySmall?.copyWith(fontSize: 11)),
                   ],
                 ),
               ],
@@ -1090,20 +1070,13 @@ class _MiniChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+      child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Account Actions
+// Account Actions  (unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _AccountActions extends StatelessWidget {
@@ -1117,13 +1090,7 @@ class _AccountActions extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: theme.shadowColor.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         children: [
@@ -1134,12 +1101,7 @@ class _AccountActions extends StatelessWidget {
             onTap: null,
           ),
           Divider(height: 1, color: theme.dividerColor.withOpacity(0.5)),
-          _ActionTile(
-            icon: Icons.logout_rounded,
-            label: 'Sign Out',
-            color: Colors.red,
-            onTap: onSignOut,
-          ),
+          _ActionTile(icon: Icons.logout_rounded, label: 'Sign Out', color: Colors.red, onTap: onSignOut),
         ],
       ),
     );
@@ -1147,13 +1109,7 @@ class _AccountActions extends StatelessWidget {
 }
 
 class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.icon,
-    required this.label,
-    this.trailing,
-    this.color,
-    this.onTap,
-  });
+  const _ActionTile({required this.icon, required this.label, this.trailing, this.color, this.onTap});
 
   final IconData icon;
   final String label;
@@ -1165,33 +1121,18 @@ class _ActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tileColor = color ?? theme.textTheme.bodyLarge?.color;
-
     return ListTile(
       onTap: onTap,
       leading: Icon(icon, color: tileColor, size: 20),
-      title: Text(
-        label,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: tileColor,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      trailing:
-          trailing ??
-          (onTap != null
-              ? Icon(
-                  Icons.chevron_right,
-                  size: 18,
-                  color: theme.textTheme.bodySmall?.color,
-                )
-              : null),
+      title: Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: tileColor, fontWeight: FontWeight.w500)),
+      trailing: trailing ?? (onTap != null ? Icon(Icons.chevron_right, size: 18, color: theme.textTheme.bodySmall?.color) : null),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Section Label
+// Section Label  (unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SectionLabel extends StatelessWidget {
@@ -1203,12 +1144,7 @@ class _SectionLabel extends StatelessWidget {
     final theme = Theme.of(context);
     return Text(
       label.toUpperCase(),
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.2,
-        color: theme.colorScheme.primary,
-      ),
+      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: theme.colorScheme.primary),
     );
   }
 }
