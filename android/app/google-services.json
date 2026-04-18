@@ -12,7 +12,20 @@
           "package_name": "com.example.reliefnet"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "838284269034-040t15fq7livo78hcml4nkfum2td9al4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.reliefnet",
+            "certificate_hash": "e3c381d83752e26293b9ebb32e6ea31364f60c26"
+          }
+        },
+        {
+          "client_id": "838284269034-6g90isl97esft4du2qh8dq04pp7unann.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAMk1Va4zWu60Mw48D8Tquja2YnmbWqfpQ"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "838284269034-6g90isl97esft4du2qh8dq04pp7unann.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
