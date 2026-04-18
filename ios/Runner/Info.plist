@@ -6,6 +6,8 @@
     <string>To capture photos/videos for issue reports</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>To attach media to your report</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+    <string>ReliefNet needs your location to verify you've reached the site.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>To record video audio for reports</string>
     <key>LSApplicationQueriesSchemes</key>
