@@ -22,23 +22,34 @@ class TaskDetailPage extends StatelessWidget {
           .doc(docId)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(child: Text("Error: ${snapshot.error}")),
+        if (!snapshot.hasData || snapshot.hasError) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
           );
         }
+
         final data = snapshot.data!.data() as Map<String, dynamic>;
         final status = data['status'] ?? 'assigned';
 
-        if (status == 'completed')
+        if (status == 'completed') {
           return _CompletedDetailPage(data: data, docId: docId);
-        if (status == 'rejected') return _RejectedDetailPage(data: data);
-        return _ActiveDetailPage(data: data, docId: docId);
+        }
+        if (status == 'rejected') {
+          return _RejectedDetailPage(data: data);
+        }
+
+        // ✅ Use a fixed key so Flutter reuses the widget instead of recreating it
+        return _ActiveDetailPage(
+          key: ValueKey(docId),
+          data: data,
+          docId: docId,
+        );
       },
     );
   }
@@ -49,7 +60,11 @@ class TaskDetailPage extends StatelessWidget {
 class _ActiveDetailPage extends StatefulWidget {
   final Map<String, dynamic> data;
   final String docId;
-  const _ActiveDetailPage({required this.data, required this.docId});
+  const _ActiveDetailPage({
+    super.key,
+    required this.data,
+    required this.docId,
+  }); // add super.key
 
   @override
   State<_ActiveDetailPage> createState() => _ActiveDetailPageState();
@@ -67,93 +82,82 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
 
   Future<void> _handleDecline() async {
     final reasonController = TextEditingController();
+    bool showError = false;
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) {
-        final isDarkDialog = Theme.of(ctx).brightness == Brightness.dark;
-        return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("Decline this task?"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Please give a reason. This helps the NGO reassign appropriately.",
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text("Decline this task?"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Please give a reason. This helps the NGO reassign appropriately.",
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: reasonController,
+                maxLines: 3,
+                onChanged: (_) {
+                  if (showError) setDialog(() => showError = false);
+                },
+                decoration: InputDecoration(
+                  hintText: "e.g. Can't reach location, wrong skill set...",
+                  filled: true,
+                  errorText: showError ? "Please provide a reason." : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("Cancel"),
             ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: reasonController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: "e.g. Can't reach location, wrong skill set...",
-                filled: true,
-                fillColor: isDarkDialog ? const Color(0xFF1E293B) : Colors.grey.shade50,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: isDarkDialog ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: isDarkDialog ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: Colors.red.shade400,
-                    width: 1.5,
-                  ),
-                ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () {
+                if (reasonController.text.trim().isEmpty) {
+                  setDialog(() => showError = true);
+                  return;
+                }
+                Navigator.pop(ctx, true);
+              },
+              child: const Text(
+                "Decline",
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () {
-              if (reasonController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(content: Text("Please provide a reason.")),
-                );
-                return;
-              }
-              Navigator.pop(ctx, true);
-            },
-            icon: const Icon(Icons.cancel_outlined, size: 18),
-            label: const Text("Decline", style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      );
-      },
+      ),
     );
 
-    if (confirmed == true) {
-      await FirebaseFirestore.instance
-          .collection('reports')
-          .doc(widget.docId)
-          .update({
-            'status': 'rejected',
-            'rejectionReason': reasonController.text.trim(),
-            'rejectedAt': FieldValue.serverTimestamp(),
-          });
-      if (mounted) Navigator.pop(context);
-    }
+    if (!mounted) return;
+    if (confirmed != true) return;
+
+    final reason = reasonController.text.trim();
+
+    Navigator.pop(context);
+
+    await FirebaseFirestore.instance
+        .collection('reports')
+        .doc(widget.docId)
+        .update({
+          'status': 'rejected',
+          'rejectionReason': reason,
+          'rejectedAt': FieldValue.serverTimestamp(),
+        });
   }
 
   Future<void> _handleReached() async {
@@ -724,7 +728,7 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                     _OutlineActionButton(
                       label: "Decline Task",
                       color: Colors.red,
-                      onTap: _handleDecline,
+                      onTap: () => Future.microtask(() => _handleDecline()),
                     ),
                   ],
 
@@ -784,7 +788,7 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                     _OutlineActionButton(
                       label: "Decline Task",
                       color: Colors.red,
-                      onTap: _handleDecline,
+                      onTap: () => Future.microtask(() => _handleDecline()),
                     ),
                   ],
 
@@ -799,7 +803,7 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                     _OutlineActionButton(
                       label: "Decline Task",
                       color: Colors.red,
-                      onTap: _handleDecline,
+                      onTap: () => Future.microtask(() => _handleDecline()),
                     ),
                   ],
                 ],
@@ -1050,6 +1054,10 @@ class _CompletedDetailPageState extends State<_CompletedDetailPage>
   @override
   void initState() {
     super.initState();
+    debugPrint(
+      '🟢 _ActiveDetailPage initialized, status: ${widget.data['status']}',
+    );
+
     _graffitiController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
@@ -1066,6 +1074,7 @@ class _CompletedDetailPageState extends State<_CompletedDetailPage>
   @override
   void dispose() {
     _graffitiController.dispose();
+    debugPrint('🔴 _ActiveDetailPage disposed');
     super.dispose();
   }
 

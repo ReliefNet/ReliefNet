@@ -17,16 +17,18 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   String _selectedFilter = 'All';
-  String _selectedSort = 'Latest';
+  // ── DEFAULT SORT: Nearest ──
+  String _selectedSort = 'Nearest';
   Position? _userPosition;
   bool _fetchingLocation = false;
   Map<String, dynamic>? _userProfile;
 
   final List<String> _sortOptions = [
+    'Nearest',
     'Latest',
     'Most Urgent',
-    'Nearest',
     'Unassigned Only',
+    'Completed Only',
   ];
 
   @override
@@ -39,10 +41,8 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _loadUserProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .get();
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
     if (doc.exists && mounted) {
       setState(() => _userProfile = doc.data());
     }
@@ -91,7 +91,7 @@ class _DashboardPageState extends State<DashboardPage> {
       case 'completed':
         return const Color(0xFF22C55E);
       default:
-        return const Color(0xFF9CA3AF); // unassigned
+        return const Color(0xFF9CA3AF);
     }
   }
 
@@ -144,10 +144,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
   double _deg2rad(double deg) => deg * pi / 180;
 
+  // ── Only show distance, never raw coordinates ──
   String _distanceLabel(double? lat, double? lng) {
     if (lat == null || lng == null) return 'No location';
-    if (_userPosition == null) return 'Fetching...';
+    if (_userPosition == null) return 'Fetching location...';
     final d = _distanceKm(lat, lng);
+    if (d == double.infinity) return 'Distance unknown';
     return d < 1
         ? '${(d * 1000).toStringAsFixed(0)} m away'
         : '${d.toStringAsFixed(1)} km away';
@@ -166,29 +168,49 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  bool _isCompleted(QueryDocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return (data['status'] ?? 'unassigned') == 'completed';
+  }
+
   List<QueryDocumentSnapshot> _applyFilterAndSort(
     List<QueryDocumentSnapshot> docs,
   ) {
-    // Filter
+    // ── Filter by urgency ──
     List<QueryDocumentSnapshot> filtered;
     if (_selectedFilter == 'All') {
       filtered = docs;
     } else {
-      filtered = docs.where((d) => d['urgency'] == _selectedFilter).toList();
+      filtered =
+          docs.where((d) => d['urgency'] == _selectedFilter).toList();
     }
 
-    // Sort
     final sorted = List<QueryDocumentSnapshot>.from(filtered);
+
+    // ── Sort option: Completed Only ──
+    if (_selectedSort == 'Completed Only') {
+      return sorted.where((d) => _isCompleted(d)).toList();
+    }
+
+    // ── Sort option: Unassigned Only ──
+    if (_selectedSort == 'Unassigned Only') {
+      return sorted.where((d) {
+        final data = d.data() as Map<String, dynamic>;
+        return (data['status'] ?? 'unassigned') == 'unassigned';
+      }).toList();
+    }
+
+    // ── Apply primary sort ──
     switch (_selectedSort) {
       case 'Most Urgent':
         sorted.sort((a, b) {
           final da = a.data() as Map<String, dynamic>;
           final db = b.data() as Map<String, dynamic>;
-          return _urgencyRank(
-            da['urgency'] ?? '',
-          ).compareTo(_urgencyRank(db['urgency'] ?? ''));
+          return _urgencyRank(da['urgency'] ?? '')
+              .compareTo(_urgencyRank(db['urgency'] ?? ''));
         });
         break;
+
       case 'Nearest':
         sorted.sort((a, b) {
           final da = a.data() as Map<String, dynamic>;
@@ -204,11 +226,7 @@ class _DashboardPageState extends State<DashboardPage> {
           return distA.compareTo(distB);
         });
         break;
-      case 'Unassigned Only':
-        return sorted.where((d) {
-          final data = d.data() as Map<String, dynamic>;
-          return (data['status'] ?? 'unassigned') == 'unassigned';
-        }).toList();
+
       case 'Latest':
       default:
         sorted.sort((a, b) {
@@ -219,7 +237,11 @@ class _DashboardPageState extends State<DashboardPage> {
           return tb.compareTo(ta);
         });
     }
-    return sorted;
+
+    // ── Always sink completed tasks to the bottom ──
+    final active = sorted.where((d) => !_isCompleted(d)).toList();
+    final completed = sorted.where((d) => _isCompleted(d)).toList();
+    return [...active, ...completed];
   }
 
   void _showReportDetail(
@@ -235,12 +257,16 @@ class _DashboardPageState extends State<DashboardPage> {
         data: data,
         docId: docId,
         userProfile: _userProfile,
-        distanceLabel: _distanceLabel(data['lat'], data['lng']),
+        distanceLabel: _distanceLabel(
+          data['lat'] as double?,
+          data['lng'] as double?,
+        ),
         urgencyColor: _urgencyColor(data['urgency'] ?? 'Low'),
         statusColor: _statusColor(data['status'] ?? 'unassigned'),
         statusIcon: _statusIcon(data['status'] ?? 'unassigned'),
         issueIcon: _issueIcon(data['issueType'] ?? 'Other'),
         timeAgo: _timeAgo(data['timestamp'] as Timestamp?),
+
       ),
     );
   }
@@ -255,8 +281,9 @@ class _DashboardPageState extends State<DashboardPage> {
           .orderBy('timestamp', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError)
+        if (snapshot.hasError) {
           return const Center(child: Text('Something went wrong'));
+        }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -274,7 +301,7 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              // ── Header ──
               Row(
                 children: [
                   Expanded(
@@ -318,7 +345,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               const SizedBox(height: 16),
 
-              // Filter chips
+              // ── Urgency filter chips ──
               Row(
                 children: [
                   _FilterChip(
@@ -356,7 +383,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               const SizedBox(height: 12),
 
-              // Sort bar
+              // ── Sort bar ──
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -439,108 +466,114 @@ class _DashboardPageState extends State<DashboardPage> {
                     final timestamp = data['timestamp'] as Timestamp?;
                     final urgencyColor = _urgencyColor(urgency);
                     final statusColor = _statusColor(status);
+                    final isCompleted = status == 'completed';
 
-                    return Card(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () => _showReportDetail(context, data, doc.id),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.primary
-                                          .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
+                    return Opacity(
+                      // Dim completed cards slightly so active ones pop
+                      opacity: isCompleted ? 0.55 : 1.0,
+                      child: Card(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () =>
+                              _showReportDetail(context, data, doc.id),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.1),
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        _issueIcon(issueType),
+                                        color: theme.colorScheme.primary,
+                                        size: 20,
+                                      ),
                                     ),
-                                    child: Icon(
-                                      _issueIcon(issueType),
-                                      color: theme.colorScheme.primary,
-                                      size: 20,
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        issueType,
+                                        style: theme.textTheme.bodyLarge
+                                            ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      issueType,
-                                      style: theme.textTheme.bodyLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                    _Badge(
+                                      label: urgency,
+                                      color: urgencyColor,
+                                      icon: Icons.circle,
+                                      iconSize: 8,
                                     ),
-                                  ),
-                                  // Urgency badge
-                                  _Badge(
-                                    label: urgency,
-                                    color: urgencyColor,
-                                    icon: Icons.circle,
-                                    iconSize: 8,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                description,
-                                style: theme.textTheme.bodyMedium,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_on_outlined,
-                                    size: 14,
-                                    color: theme.textTheme.bodyMedium?.color,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _distanceLabel(lat, lng),
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontSize: 12,
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  description,
+                                  style: theme.textTheme.bodyMedium,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.near_me_outlined,
+                                      size: 14,
+                                      color:
+                                          theme.textTheme.bodyMedium?.color,
                                     ),
-                                  ),
-                                  const Spacer(),
-                                  // Status badge
-                                  _Badge(
-                                    label:
-                                        status[0].toUpperCase() +
-                                        status.substring(1),
-                                    color: statusColor,
-                                    icon: _statusIcon(status),
-                                    iconSize: 12,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time,
-                                    size: 13,
-                                    color: theme.textTheme.bodyMedium?.color,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _timeAgo(timestamp),
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontSize: 12,
+                                    const SizedBox(width: 4),
+                                    // ── Distance only, no raw coords ──
+                                    Text(
+                                      _distanceLabel(lat, lng),
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(fontSize: 12),
                                     ),
-                                  ),
-                                  const Spacer(),
-                                  Icon(
-                                    Icons.chevron_right,
-                                    size: 18,
-                                    color: theme.textTheme.bodyMedium?.color,
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    const Spacer(),
+                                    _Badge(
+                                      label: status[0].toUpperCase() +
+                                          status.substring(1),
+                                      color: statusColor,
+                                      icon: _statusIcon(status),
+                                      iconSize: 12,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 13,
+                                      color:
+                                          theme.textTheme.bodyMedium?.color,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _timeAgo(timestamp),
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(fontSize: 12),
+                                    ),
+                                    const Spacer(),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      size: 18,
+                                      color:
+                                          theme.textTheme.bodyMedium?.color,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -581,7 +614,6 @@ class _ReportDetailSheet extends StatelessWidget {
   final String timeAgo;
 
   bool get _isVolunteer => userProfile?['isVolunteer'] == true;
-
   String get _status => data['status'] ?? 'unassigned';
 
   bool get _alreadyAccepted {
@@ -596,39 +628,33 @@ class _ReportDetailSheet extends StatelessWidget {
     if (uid == null) return;
 
     try {
-      await FirebaseFirestore.instance.collection('reports').doc(docId).update({
+      await FirebaseFirestore.instance
+          .collection('reports')
+          .doc(docId)
+          .update({
         'assignedVolunteers': FieldValue.arrayUnion([uid]),
         'status': 'assigned',
       });
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Task accepted!')));
-        Navigator.pop(context);
+        Navigator.pop(context); // close bottom sheet
+        Navigator.pushNamed(context, '/volunteer', arguments: docId);
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
-  void _showProofSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _ProofSubmissionSheet(docId: docId),
-    );
+  void _goToVolunteerTask(BuildContext context) {
+    Navigator.pop(context);
+    Navigator.pushNamed(context, '/volunteer', arguments: docId);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final lat = data['lat'] as double?;
-    final lng = data['lng'] as double?;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.65,
@@ -637,11 +663,11 @@ class _ReportDetailSheet extends StatelessWidget {
       builder: (context, scrollController) => Container(
         decoration: BoxDecoration(
           color: theme.cardTheme.color ?? theme.scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
-            // Drag handle
             Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               width: 40,
@@ -656,13 +682,14 @@ class _ReportDetailSheet extends StatelessWidget {
                 controller: scrollController,
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 children: [
-                  // Header
+                  // ── Header ──
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withOpacity(0.1),
+                          color:
+                              theme.colorScheme.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
@@ -685,9 +712,8 @@ class _ReportDetailSheet extends StatelessWidget {
                             ),
                             Text(
                               timeAgo,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontSize: 12,
-                              ),
+                              style: theme.textTheme.bodyMedium
+                                  ?.copyWith(fontSize: 12),
                             ),
                           ],
                         ),
@@ -702,7 +728,7 @@ class _ReportDetailSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
 
-                  // Status badge row
+                  // ── Status + distance row (no raw coords) ──
                   Row(
                     children: [
                       Icon(statusIcon, size: 14, color: statusColor),
@@ -717,100 +743,35 @@ class _ReportDetailSheet extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       Icon(
-                        Icons.location_on_outlined,
+                        Icons.near_me_outlined,
                         size: 14,
                         color: theme.textTheme.bodyMedium?.color,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         distanceLabel,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 13,
-                        ),
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(fontSize: 13),
                       ),
                     ],
                   ),
                   const SizedBox(height: 20),
 
-                  // Description
+                  // ── Description ──
                   _DetailSection(
                     title: 'Description',
                     child: Text(
                       data['description'] ?? '',
-                      style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(height: 1.5),
                     ),
                   ),
                   const SizedBox(height: 20),
 
-                  // Location / Map
+                  // ── Location: distance only unless accepted ──
                   _DetailSection(
                     title: 'Location',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (lat != null && lng != null) ...[
-                          Text(
-                            'Lat: ${lat.toStringAsFixed(6)},  Lng: ${lng.toStringAsFixed(6)}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.network(
-                              'https://maps.googleapis.com/maps/api/staticmap'
-                              '?center=$lat,$lng&zoom=15&size=600x200'
-                              '&markers=color:red%7C$lat,$lng'
-                              '&key=YOUR_GOOGLE_MAPS_API_KEY',
-                              height: 180,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                height: 180,
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary.withOpacity(
-                                    0.08,
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'Add API key to enable map preview',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: () async {
-                                final uri = Uri.parse(
-                                  'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
-                                );
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(
-                                    uri,
-                                    mode: LaunchMode.externalApplication,
-                                  );
-                                }
-                              },
-                              icon: const Icon(Icons.open_in_new, size: 16),
-                              label: const Text('Open in Google Maps'),
-                            ),
-                          ),
-                        ] else
-                          Text(
-                            'No location data',
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                      ],
-                    ),
+                    child: _buildLocationSection(context, theme),
                   ),
                   const SizedBox(height: 20),
 
@@ -827,92 +788,179 @@ class _ReportDetailSheet extends StatelessWidget {
                   const SizedBox(height: 28),
 
                   // ── Action button ──
-                  if (!_isVolunteer)
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.06),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.lock_outline,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Only verified NGO volunteers can accept tasks.',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (_status == 'completed')
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF22C55E).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: const Color(0xFF22C55E).withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.check_circle_outline,
-                            size: 18,
-                            color: Color(0xFF22C55E),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'This task has been completed.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (_alreadyAccepted)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showProofSheet(context),
-                        icon: const Icon(Icons.upload_outlined),
-                        label: const Text('Submit Proof & Mark Complete'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF22C55E),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.all(14.0),
-                        ),
-                      ),
-                    )
-                  else
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _acceptTask(context),
-                        icon: const Icon(Icons.handshake_outlined),
-                        label: const Text('Accept Task'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                      ),
-                    ),
+                  _buildActionButton(context, theme),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationSection(BuildContext context, ThemeData theme) {
+    final lat = data['lat'] as double?;
+    final lng = data['lng'] as double?;
+
+    if (lat == null || lng == null) {
+      return Text('No location data', style: theme.textTheme.bodyMedium);
+    }
+
+    // ── If accepted, show map + open in Maps button ──
+    if (_alreadyAccepted || _status == 'completed') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Show distance (not raw coords)
+          Row(
+            children: [
+              Icon(Icons.near_me_outlined,
+                  size: 14, color: theme.textTheme.bodyMedium?.color),
+              const SizedBox(width: 6),
+              Text(distanceLabel, style: theme.textTheme.bodyMedium),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              'https://maps.googleapis.com/maps/api/staticmap'
+              '?center=$lat,$lng&zoom=15&size=600x200'
+              '&markers=color:red%7C$lat,$lng'
+              '&key=YOUR_GOOGLE_MAPS_API_KEY',
+              height: 180,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                height: 180,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    'Add API key to enable map preview',
+                    style:
+                        theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final uri = Uri.parse(
+                  'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+                );
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri,
+                      mode: LaunchMode.externalApplication);
+                }
+              },
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text('Open in Google Maps'),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // ── Not accepted: only show distance, no map ──
+    return Row(
+      children: [
+        Icon(Icons.lock_outline,
+            size: 14, color: theme.colorScheme.primary.withOpacity(0.6)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            '$distanceLabel · Accept task to view map',
+            style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton(BuildContext context, ThemeData theme) {
+    if (!_isVolunteer) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+              color: theme.colorScheme.primary.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.lock_outline,
+                size: 16, color: theme.colorScheme.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Only verified NGO volunteers can accept tasks.',
+                style:
+                    theme.textTheme.bodyMedium?.copyWith(fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_status == 'completed') {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF22C55E).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+              color: const Color(0xFF22C55E).withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.check_circle_outline,
+                size: 18, color: Color(0xFF22C55E)),
+            const SizedBox(width: 10),
+            Text(
+              'This task has been completed.',
+              style:
+                  theme.textTheme.bodyMedium?.copyWith(fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_alreadyAccepted) {
+      // ── Volunteer already accepted → redirect to Volunteer tab ──
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () => _goToVolunteerTask(context),
+          icon: const Icon(Icons.volunteer_activism_outlined),
+          label: const Text('Go to My Tasks → Submit Proof'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF22C55E),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.all(14.0),
+          ),
+        ),
+      );
+    }
+
+    // ── Not yet accepted ──
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => _acceptTask(context),
+        icon: const Icon(Icons.handshake_outlined),
+        label: const Text('Accept Task'),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),
     );
@@ -951,9 +999,9 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
       return;
     }
     if (_noteController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please add a note')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add a note')),
+      );
       return;
     }
 
@@ -961,26 +1009,23 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
     try {
-      // Upload photo to Firebase Storage
       final ref = FirebaseStorage.instance.ref(
         'proofs/${widget.docId}/$uid-${DateTime.now().millisecondsSinceEpoch}.jpg',
       );
       await ref.putFile(_photo!);
       final photoUrl = await ref.getDownloadURL();
 
-      // Save proof to subcollection
       await FirebaseFirestore.instance
           .collection('reports')
           .doc(widget.docId)
           .collection('proofs')
           .add({
-            'volunteerId': uid,
-            'photoUrl': photoUrl,
-            'note': _noteController.text.trim(),
-            'submittedAt': FieldValue.serverTimestamp(),
-          });
+        'volunteerId': uid,
+        'photoUrl': photoUrl,
+        'note': _noteController.text.trim(),
+        'submittedAt': FieldValue.serverTimestamp(),
+      });
 
-      // Update report status
       await FirebaseFirestore.instance
           .collection('reports')
           .doc(widget.docId)
@@ -992,14 +1037,13 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
             content: Text('Proof submitted! Task marked as completed.'),
           ),
         );
-        Navigator.pop(context); // close proof sheet
-        Navigator.pop(context); // close detail sheet
+        Navigator.pop(context);
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -1024,7 +1068,8 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         decoration: BoxDecoration(
           color: theme.cardTheme.color ?? theme.scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1049,8 +1094,6 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Photo picker
             GestureDetector(
               onTap: _pickPhoto,
               child: Container(
@@ -1061,7 +1104,6 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: theme.colorScheme.primary.withOpacity(0.25),
-                    style: BorderStyle.solid,
                   ),
                 ),
                 child: _photo != null
@@ -1080,17 +1122,14 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
                           const SizedBox(height: 8),
                           Text(
                             'Tap to attach photo',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontSize: 13,
-                            ),
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(fontSize: 13),
                           ),
                         ],
                       ),
               ),
             ),
             const SizedBox(height: 16),
-
-            // Note field
             TextField(
               controller: _noteController,
               maxLines: 3,
@@ -1100,7 +1139,6 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
               ),
             ),
             const SizedBox(height: 20),
-
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -1112,10 +1150,8 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
                 ),
                 child: _submitting
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Submit Proof',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                    : const Text('Submit Proof',
+                        style: TextStyle(fontSize: 16)),
               ),
             ),
           ],

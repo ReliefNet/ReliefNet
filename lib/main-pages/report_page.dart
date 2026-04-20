@@ -156,15 +156,15 @@ class _ReportPageState extends State<ReportPage> {
     if (!_formKey.currentState!.validate()) return;
 
     // NEW: Check if media list is empty
-    if (_mediaFiles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please add at least one photo or video.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    // if (_mediaFiles.isEmpty) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text('Please add at least one photo or video.'),
+    //       backgroundColor: Colors.red,
+    //     ),
+    //   );
+    //   return;
+    // }
 
     if (_latitude == null || _longitude == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -468,7 +468,6 @@ class _ReportPageState extends State<ReportPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // ── Header ────────────────────────────────────────────────────
             Text('Report an Issue', style: textTheme.bodyLarge),
             Text(
@@ -487,19 +486,20 @@ class _ReportPageState extends State<ReportPage> {
                 prefixIcon: Icon(Icons.help_outline_rounded),
               ),
               items: _issueTypes.map((e) {
-                return DropdownMenuItem(
-                  value: e,
-                  child: Text(e),
-                );
+                return DropdownMenuItem(value: e, child: Text(e));
               }).toList(),
               onChanged: (val) => setState(() => _issueType = val),
-              validator: (val) => val == null ? 'Please select an issue type' : null,
+              validator: (val) =>
+                  val == null ? 'Please select an issue type' : null,
               onSaved: (val) => _issueType = val,
             ),
             const SizedBox(height: 20),
 
             // ── Urgency ───────────────────────────────────────────────────
-            _FieldLabel(label: 'Urgency Level', icon: Icons.priority_high_rounded),
+            _FieldLabel(
+              label: 'Urgency Level',
+              icon: Icons.priority_high_rounded,
+            ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _urgency,
@@ -537,23 +537,38 @@ class _ReportPageState extends State<ReportPage> {
                     decoration: InputDecoration(
                       hintText: 'Tap to fetch your location',
                       prefixIcon: Icon(
-                        _latitude != null ? Icons.location_on : Icons.location_off_outlined,
+                        _latitude != null
+                            ? Icons.location_on
+                            : Icons.location_off_outlined,
                         color: _latitude != null ? colorScheme.primary : null,
                       ),
                     ),
                     controller: TextEditingController(text: _locationText),
-                    validator: (val) => _latitude == null ? 'Please fetch location' : null,
+                    validator: (val) =>
+                        _latitude == null ? 'Please fetch location' : null,
                   ),
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: _isFetchingLocation ? null : _getLocation,
                   child: _isFetchingLocation
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
                       : const Icon(Icons.my_location_rounded),
                 ),
               ],
@@ -561,14 +576,17 @@ class _ReportPageState extends State<ReportPage> {
             const SizedBox(height: 20),
 
             // ── Media ─────────────────────────────────────────────────────
-            _FieldLabel(label: 'Photos / Videos', icon: Icons.photo_library_outlined),
+            _FieldLabel(
+              label: 'Photos / Videos',
+              icon: Icons.photo_library_outlined,
+            ),
             const SizedBox(height: 8),
             FormField<List<XFile>>(
               initialValue: _mediaFiles,
               validator: (files) {
-                if (files == null || files.isEmpty) {
-                  return 'Please add at least one photo or video';
-                }
+                // if (files == null || files.isEmpty) {
+                //   return 'Please add at least one photo or video';
+                // }
                 return null;
               },
               builder: (field) {
@@ -593,7 +611,11 @@ class _ReportPageState extends State<ReportPage> {
                                           width: 110,
                                           height: 110,
                                           color: Colors.black12,
-                                          child: const Icon(Icons.videocam_rounded, size: 40, color: Colors.black45),
+                                          child: const Icon(
+                                            Icons.videocam_rounded,
+                                            size: 40,
+                                            color: Colors.black45,
+                                          ),
                                         )
                                       : Image.file(
                                           File(_mediaFiles[i].path),
@@ -611,8 +633,15 @@ class _ReportPageState extends State<ReportPage> {
                                       field.didChange(_mediaFiles);
                                     },
                                     child: Container(
-                                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                                      child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close_rounded,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -626,11 +655,16 @@ class _ReportPageState extends State<ReportPage> {
 
                     OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        side: field.hasError
-                            ? const BorderSide(color: Colors.red, width: 1.5)
-                            : BorderSide(color: colorScheme.primary.withOpacity(0.4)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        side: BorderSide(
+                          color: colorScheme.primary.withOpacity(0.4),
+                        ), // Simplify this
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 16,
+                        ),
                       ),
                       onPressed: _mediaFiles.length >= 5
                           ? null
@@ -640,7 +674,9 @@ class _ReportPageState extends State<ReportPage> {
                             },
                       icon: const Icon(Icons.add_a_photo_outlined),
                       label: Text(
-                        _mediaFiles.isEmpty ? 'Add Photo / Video' : 'Add More (${_mediaFiles.length}/5)',
+                        _mediaFiles.isEmpty
+                            ? 'Add Photo / Video'
+                            : 'Add More (${_mediaFiles.length}/5)',
                       ),
                     ),
 
@@ -649,7 +685,10 @@ class _ReportPageState extends State<ReportPage> {
                         padding: const EdgeInsets.only(top: 6, left: 12),
                         child: Text(
                           field.errorText!,
-                          style: const TextStyle(color: Colors.red, fontSize: 12),
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                   ],
@@ -668,7 +707,9 @@ class _ReportPageState extends State<ReportPage> {
                 hintText: 'Describe the situation in detail...',
                 alignLabelWithHint: true,
               ),
-              validator: (val) => val == null || val.isEmpty ? 'Please enter a description' : null,
+              validator: (val) => val == null || val.isEmpty
+                  ? 'Please enter a description'
+                  : null,
               onSaved: (val) => _description = val!,
             ),
             const SizedBox(height: 32),
@@ -679,17 +720,32 @@ class _ReportPageState extends State<ReportPage> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 onPressed: _isSubmitting ? null : _submitForm,
                 child: _isSubmitting
-                    ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
                     : const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.send_rounded),
                           SizedBox(width: 8),
-                          Text('Submit Report', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          Text(
+                            'Submit Report',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
               ),
@@ -715,10 +771,11 @@ class _FieldLabel extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
       ],
     );
   }
 }
-
