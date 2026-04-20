@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:reliefnet/login-signup/signup_page.dart';
 
@@ -36,6 +37,13 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg), backgroundColor: Colors.red),
+    );
+  }
+
+  void _showSuccess(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.green),
     );
   }
 
@@ -77,12 +85,40 @@ class _LoginPageState extends State<LoginPage> {
       );
       final result = await FirebaseAuth.instance.signInWithCredential(credential);
       if (result.user == null) throw Exception("Firebase user is null");
+
+      // Fix 3: create Firestore doc for first-time Google users
+      if (result.additionalUserInfo?.isNewUser == true) {
+        final user = result.user!;
+        final baseName = (user.displayName ?? 'user').toLowerCase().replaceAll(' ', '_');
+        final username = '${baseName}_${user.uid.substring(0, 4)}';
+
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'name': user.displayName ?? '',
+          'username': username,
+          'phone': user.phoneNumber ?? '',
+          'email': user.email ?? '',
+          'isVolunteer': false,
+          'volunteerId': '',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
     } catch (e) {
       if (FirebaseAuth.instance.currentUser == null) {
         _showError("Google sign-in failed. Please try again.");
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // Fix 6: navigate to signup and handle the result
+  Future<void> _goToSignup() async {
+    final success = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const SignupPage()),
+    );
+    if (success == true) {
+      _showSuccess('Account created! Please sign in.');
     }
   }
 
@@ -221,10 +257,7 @@ class _LoginPageState extends State<LoginPage> {
                     // Sign Up Link
                     Center(
                       child: GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const SignupPage()),
-                        ),
+                        onTap: _goToSignup, // Fix 6: use _goToSignup instead of inline push
                         child: RichText(
                           text: TextSpan(
                             style: textTheme.bodyMedium,
