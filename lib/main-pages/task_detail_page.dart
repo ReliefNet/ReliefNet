@@ -311,6 +311,7 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          final colorScheme = Theme.of(ctx).colorScheme;
           return Container(
             decoration: BoxDecoration(
               color: Theme.of(ctx).colorScheme.surface,
@@ -334,19 +335,19 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                     height: 4,
                     margin: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
+                      color: Theme.of(ctx).textTheme.bodySmall?.color,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
                 ),
-                const Text(
+                Text(
                   "Mark as Resolved",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: Theme.of(ctx).textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "Describe what was done. Photo/video proof is optional but encouraged.",
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                  style: Theme.of(ctx).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 20),
 
@@ -407,13 +408,13 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: isDark
-                          ? Colors.grey.shade800
-                          : Colors.grey.shade100,
+                          ? colorScheme.surfaceContainerHighest
+                          : colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: proofFile != null
                             ? Colors.green.shade400
-                            : Colors.grey.shade300,
+                            : colorScheme.outline,
                         width: 2,
                       ),
                     ),
@@ -443,10 +444,7 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                                           ),
                                           Text(
                                             proofFile!.path.split('/').last,
-                                            style: TextStyle(
-                                              color: Colors.grey.shade500,
-                                              fontSize: 12,
-                                            ),
+                                            style: Theme.of(ctx).textTheme.bodySmall,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -485,23 +483,20 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                                   Icon(
                                     Icons.add_a_photo_outlined,
                                     size: 28,
-                                    color: Colors.grey.shade400,
+                                    color: Theme.of(ctx).textTheme.bodySmall?.color,
                                   ),
                                   const SizedBox(width: 12),
                                   Icon(
                                     Icons.videocam_outlined,
                                     size: 28,
-                                    color: Colors.grey.shade400,
+                                    color: Theme.of(ctx).textTheme.bodySmall?.color,
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 10),
                               Text(
                                 "Tap to add photo or video (optional)",
-                                style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 13,
-                                ),
+                                style: Theme.of(ctx).textTheme.bodySmall,
                               ),
                             ],
                           ),
@@ -516,8 +511,8 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                     hintText: "What was done? How was it resolved?",
                     filled: true,
                     fillColor: isDark
-                        ? Colors.grey.shade800
-                        : Colors.grey.shade100,
+                        ? colorScheme.surfaceContainerHighest
+                        : colorScheme.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -566,6 +561,7 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
     final color = _issueColor(issue);
     final icon = _issueIcon(issue);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     final steps = ['assigned', 'in_progress', 'reached', 'completed'];
     final currentStep = steps.indexOf(status).clamp(0, 3);
@@ -611,7 +607,7 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                         ),
                         if (reporterName.isNotEmpty) ...[
                           const SizedBox(height: 14),
-                          Divider(color: Colors.grey.shade200),
+                          Divider(color: colorScheme.outline.withOpacity(0.2)),
                           const SizedBox(height: 10),
                           Row(
                             children: [
@@ -630,10 +626,7 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                                 children: [
                                   Text(
                                     "Reported by",
-                                    style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 11,
-                                    ),
+                                    style: Theme.of(context).textTheme.bodySmall,
                                   ),
                                   Text(
                                     reporterName,
@@ -672,9 +665,7 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                           ],
                           Text(
                             "${(lat as num).toStringAsFixed(5)}, ${(lng as num).toStringAsFixed(5)}",
-                            style: TextStyle(
-                              color: Colors.grey.shade500,
-                              fontSize: 12,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontFamily: 'monospace',
                             ),
                           ),
@@ -693,12 +684,26 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                                 foregroundColor: Colors.blue.shade600,
                               ),
                               onPressed: () async {
-                                final uri = Uri.parse(
-                                  'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+                                final lat = widget.data['lat'];
+                                final lng = widget.data['lng'];
+
+                                if (lat == null || lng == null) return;
+
+                                final Uri googleMapsUri = Uri.parse(
+                                  'google.navigation:q=$lat,$lng&mode=d',
                                 );
-                                if (await canLaunchUrl(uri)) {
+
+                                try {
                                   await launchUrl(
-                                    uri,
+                                    googleMapsUri,
+                                    mode: LaunchMode.externalApplication,
+                                  );
+                                } catch (e) {
+                                  final Uri fallback = Uri.parse(
+                                    'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+                                  );
+                                  await launchUrl(
+                                    fallback,
                                     mode: LaunchMode.externalApplication,
                                   );
                                 }
@@ -716,7 +721,6 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                   const SizedBox(height: 28),
 
                   // ── Action area ──
-                  // Replace the entire action area block (the if-status checks at the bottom of build)
                   if (status == 'assigned') ...[
                     _ActionButton(
                       label: "Accept & Start",
@@ -741,7 +745,7 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
                             const SizedBox(height: 12),
                             Text(
                               "Verifying your location...",
-                              style: TextStyle(color: Colors.grey.shade500),
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ],
                         ),
@@ -821,7 +825,6 @@ class _ActiveDetailPageState extends State<_ActiveDetailPage> {
 class _MediaPickerOptions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(20),
@@ -832,9 +835,9 @@ class _MediaPickerOptions extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             "Add Proof",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 20),
           Row(
@@ -1008,7 +1011,7 @@ class _SubmitButtonState extends State<_SubmitButton> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.green.shade600,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: Colors.grey.shade300,
+          disabledBackgroundColor: Theme.of(context).colorScheme.outline,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -1095,6 +1098,7 @@ class _CompletedDetailPageState extends State<_CompletedDetailPage>
         '';
     final color = _issueColor(issue);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     String resolvedTime = '';
     if (resolvedAt != null) {
@@ -1199,7 +1203,7 @@ class _CompletedDetailPageState extends State<_CompletedDetailPage>
                             ),
                             if (reporterName.isNotEmpty) ...[
                               const SizedBox(height: 14),
-                              Divider(color: Colors.grey.shade200),
+                              Divider(color: colorScheme.outline.withOpacity(0.2)),
                               const SizedBox(height: 10),
                               Row(
                                 children: [
@@ -1219,10 +1223,7 @@ class _CompletedDetailPageState extends State<_CompletedDetailPage>
                                     children: [
                                       Text(
                                         "Reported by",
-                                        style: TextStyle(
-                                          color: Colors.grey.shade500,
-                                          fontSize: 11,
-                                        ),
+                                        style: Theme.of(context).textTheme.bodySmall,
                                       ),
                                       Text(
                                         reporterName,
@@ -1268,7 +1269,7 @@ class _CompletedDetailPageState extends State<_CompletedDetailPage>
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
+                                    color: colorScheme.surface,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Column(
@@ -1604,6 +1605,7 @@ class _RejectedDetailPage extends StatelessWidget {
         data['submittedByName'] ??
         '';
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       body: CustomScrollView(
@@ -1709,7 +1711,7 @@ class _RejectedDetailPage extends StatelessWidget {
                         ),
                         if (reporterName.isNotEmpty) ...[
                           const SizedBox(height: 14),
-                          Divider(color: Colors.grey.shade200),
+                          Divider(color: colorScheme.outline.withOpacity(0.2)),
                           const SizedBox(height: 10),
                           Row(
                             children: [
@@ -1728,10 +1730,7 @@ class _RejectedDetailPage extends StatelessWidget {
                                 children: [
                                   Text(
                                     "Reported by",
-                                    style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 11,
-                                    ),
+                                    style: Theme.of(context).textTheme.bodySmall,
                                   ),
                                   Text(
                                     reporterName,
@@ -1848,6 +1847,7 @@ class _FlowStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
     final steps = [
       (Icons.assignment_outlined, "Assigned", Colors.blue.shade600),
       (Icons.directions_run, "En Route", Colors.orange.shade700),
@@ -1858,7 +1858,7 @@ class _FlowStepper extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -1889,9 +1889,7 @@ class _FlowStepper extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: isActive
                               ? color
-                              : (isDark
-                                    ? Colors.grey.shade800
-                                    : Colors.grey.shade200),
+                              : colorScheme.outline.withOpacity(0.15),
                           shape: BoxShape.circle,
                           boxShadow: isCurrent
                               ? [
@@ -1906,7 +1904,9 @@ class _FlowStepper extends StatelessWidget {
                         child: Icon(
                           icon,
                           size: isCurrent ? 20 : 15,
-                          color: isActive ? Colors.white : Colors.grey.shade400,
+                          color: isActive
+                              ? Colors.white
+                              : colorScheme.onSurface.withOpacity(0.3),
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -1917,7 +1917,9 @@ class _FlowStepper extends StatelessWidget {
                           fontWeight: isCurrent
                               ? FontWeight.bold
                               : FontWeight.normal,
-                          color: isActive ? color : Colors.grey.shade400,
+                          color: isActive
+                              ? color
+                              : colorScheme.onSurface.withOpacity(0.3),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -1938,9 +1940,7 @@ class _FlowStepper extends StatelessWidget {
                             : null,
                         color: i < currentStep
                             ? null
-                            : (isDark
-                                  ? Colors.grey.shade700
-                                  : Colors.grey.shade200),
+                            : colorScheme.outline.withOpacity(0.2),
                       ),
                     ),
                   ),
@@ -1970,11 +1970,12 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         border: accentColor != null
             ? Border.all(color: accentColor!.withOpacity(0.3), width: 1.5)
@@ -1992,12 +1993,16 @@ class _SectionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: accentColor ?? Colors.grey.shade500),
+              Icon(
+                icon,
+                size: 14,
+                color: accentColor ?? Theme.of(context).textTheme.bodySmall?.color,
+              ),
               const SizedBox(width: 6),
               Text(
                 title,
                 style: TextStyle(
-                  color: accentColor ?? Colors.grey.shade500,
+                  color: accentColor ?? Theme.of(context).textTheme.bodySmall?.color,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.8,

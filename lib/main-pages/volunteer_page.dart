@@ -14,57 +14,68 @@ class VolunteerPage extends StatelessWidget {
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-          foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+          foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
           elevation: 0,
           centerTitle: true,
-          title: Text(
-            "My Tasks",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: isDark ? Colors.white : const Color(0xFF0F172A),
-            ),
-          ),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(60),
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: TabBar(
-                dividerColor: Colors.transparent,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: isDark ? const Color(0xFF334155) : Colors.white,
-                  boxShadow: [
-                    if (!isDark)
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
+          title: PreferredSize(
+            preferredSize: const Size.fromHeight(70),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.2)
+                      : colorScheme.surface.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TabBar(
+                  dividerColor: Colors.transparent,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicator: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: isDark
+                        ? const Color(0xFF334155)
+                        : colorScheme.surface,
+                    boxShadow: [
+                      if (!isDark)
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                    ],
+                  ),
+                  labelColor: isDark
+                      ? Colors.white
+                      : colorScheme.onSurface,
+                  unselectedLabelColor: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.color,
+                  labelStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                  tabs: const [
+                    Tab(text: "Active"),
+                    Tab(text: "Completed"),
+                    Tab(text: "Rejected"),
                   ],
                 ),
-                labelColor: isDark ? Colors.white : const Color(0xFF0F172A),
-                unselectedLabelColor: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                tabs: const [
-                  Tab(text: "Active"),
-                  Tab(text: "Completed"),
-                  Tab(text: "Rejected"),
-                ],
               ),
             ),
           ),
@@ -151,19 +162,12 @@ class _TaskGrid extends StatelessWidget {
             Icon(
               emptyIcon,
               size: 72,
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey.shade600
-                  : Colors.grey.shade300,
+              color: Theme.of(context).textTheme.bodySmall?.color,
             ),
             const SizedBox(height: 16),
             Text(
               emptyMessage,
-              style: TextStyle(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey.shade400
-                    : Colors.grey.shade500,
-                fontSize: 15,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
         ),
@@ -196,7 +200,8 @@ class _TaskCard extends StatelessWidget {
     } else if (data['location'] != null) {
       final loc = data['location'];
       if (loc is GeoPoint) {
-        address = "Lat: ${loc.latitude.toStringAsFixed(4)}, Lng: ${loc.longitude.toStringAsFixed(4)}";
+        address =
+            "Lat: ${loc.latitude.toStringAsFixed(4)}, Lng: ${loc.longitude.toStringAsFixed(4)}";
       } else if (loc is String) {
         address = loc;
       }
@@ -205,20 +210,39 @@ class _TaskCard extends StatelessWidget {
     final color = _issueColor(issue);
     final icon = _issueIcon(issue);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     final statusMap = {
-      'assigned': (const Color(0xFF3B82F6), 'Assigned', Icons.assignment_ind_rounded),
-      'in_progress': (const Color(0xFFF59E0B), 'En Route', Icons.directions_run_rounded),
-      'reached': (const Color(0xFF8B5CF6), 'On Site', Icons.location_on_rounded),
-      'completed': (const Color(0xFF10B981), 'Completed', Icons.check_circle_rounded),
+      'assigned': (
+        const Color(0xFF3B82F6),
+        'Assigned',
+        Icons.assignment_ind_rounded,
+      ),
+      'in_progress': (
+        const Color(0xFFF59E0B),
+        'En Route',
+        Icons.directions_run_rounded,
+      ),
+      'reached': (
+        const Color(0xFF8B5CF6),
+        'On Site',
+        Icons.location_on_rounded,
+      ),
+      'completed': (
+        const Color(0xFF10B981),
+        'Completed',
+        Icons.check_circle_rounded,
+      ),
       'rejected': (const Color(0xFFEF4444), 'Declined', Icons.cancel_rounded),
     };
-    final statusEntry = statusMap[status] ?? (Colors.grey.shade600, 'Unknown', Icons.help_outline_rounded);
+    final statusEntry =
+        statusMap[status] ??
+        (Colors.grey.shade600, 'Unknown', Icons.help_outline_rounded);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -228,7 +252,7 @@ class _TaskCard extends StatelessWidget {
           ),
         ],
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.1),
+          color: colorScheme.outline.withValues(alpha: isDark ? 0.05 : 0.1),
         ),
       ),
       child: Material(
@@ -265,17 +289,14 @@ class _TaskCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              color: colorScheme.onSurface,
                               letterSpacing: -0.5,
                             ),
                           ),
                           if (timestamp != null)
                             Text(
                               _formatDate(timestamp.toDate()),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
                         ],
                       ),
@@ -293,7 +314,7 @@ class _TaskCard extends StatelessWidget {
               Divider(
                 height: 1,
                 thickness: 1,
-                color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.05),
+                color: colorScheme.outline.withValues(alpha: isDark ? 0.05 : 0.05),
               ),
 
               // Content Section
@@ -307,22 +328,20 @@ class _TaskCard extends StatelessWidget {
                         description,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.5,
-                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
-                        ),
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 16),
                     ],
-                    
+
                     if (address.isNotEmpty)
                       Row(
                         children: [
                           Icon(
                             Icons.map_rounded,
                             size: 16,
-                            color: isDark ? Colors.blue.shade400 : Colors.blue.shade600,
+                            color: isDark
+                                ? Colors.blue.shade400
+                                : Colors.blue.shade600,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -333,7 +352,7 @@ class _TaskCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF1E293B),
+                                color: colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -345,9 +364,15 @@ class _TaskCard extends StatelessWidget {
 
               // Footer Section
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.black.withValues(alpha: 0.1) : Colors.grey.shade50,
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.1)
+                      : colorScheme.surfaceContainerHighest?.withValues(alpha: 0.3) ??
+                          colorScheme.surface,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(20),
                     bottomRight: Radius.circular(20),
@@ -358,11 +383,10 @@ class _TaskCard extends StatelessWidget {
                   children: [
                     Text(
                       "TASK ID: ${doc.id.substring(0, 8).toUpperCase()}",
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
                         letterSpacing: 1,
+                        fontSize: 11,
                       ),
                     ),
                     Row(
@@ -376,7 +400,11 @@ class _TaskCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        Icon(Icons.arrow_forward_rounded, size: 14, color: color),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 14,
+                          color: color,
+                        ),
                       ],
                     ),
                   ],
@@ -402,7 +430,11 @@ class _StatusBadge extends StatelessWidget {
   final String label;
   final Color color;
   final IconData icon;
-  const _StatusBadge({required this.label, required this.color, required this.icon});
+  const _StatusBadge({
+    required this.label,
+    required this.color,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {

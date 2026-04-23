@@ -701,8 +701,7 @@ class _ProjectDetailsSheet extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoRow(Icons.person_outline, "Ramandeep Singh"),
             _buildInfoRow(Icons.person_outline, "Japneet Singh"),
-            _buildInfoRow(Icons.person_outline, "Member Name 3"),
-            _buildInfoRow(Icons.person_outline, "Member Name 4"),
+            _buildInfoRow(Icons.person_outline, "Aamandeep Singh"),
 
             const SizedBox(height: 24),
             Text(

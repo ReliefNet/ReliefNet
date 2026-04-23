@@ -4,9 +4,14 @@ import 'package:flutter/material.dart';
 /// Used in: confirmation dialog, dashboard detail sheet, volunteer task detail.
 class AiSummaryCard extends StatelessWidget {
   final Map<String, dynamic> aiSummary;
-  final bool compact; // compact = true for dashboard list cards (just skillset chips)
+  final bool
+  compact; // compact = true for dashboard list cards (just skillset chips)
 
-  const AiSummaryCard({super.key, required this.aiSummary, this.compact = false});
+  const AiSummaryCard({
+    super.key,
+    required this.aiSummary,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +35,14 @@ class AiSummaryCard extends StatelessWidget {
             children: [
               const Icon(Icons.auto_awesome, size: 12, color: Colors.blue),
               const SizedBox(width: 4),
-              Text('Skills needed:', style: TextStyle(fontSize: 11, color: Colors.blue.shade700, fontWeight: FontWeight.w600)),
+              Text(
+                'Skills needed:',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.blue.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           ...skills.map((s) => _SkillChip(label: s)),
@@ -55,12 +67,29 @@ class AiSummaryCard extends StatelessWidget {
             children: [
               const Icon(Icons.auto_awesome, size: 15, color: Colors.blue),
               const SizedBox(width: 6),
-              Text('AI Analysis', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.blue.shade700)),
+              Text(
+                'AI Analysis',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade700,
+                ),
+              ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                child: Text('Powered by Gemini', style: TextStyle(fontSize: 10, color: Colors.blue.shade400, fontWeight: FontWeight.w500)),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Powered by Gemini',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.blue.shade400,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
             ],
           ),
@@ -68,7 +97,13 @@ class AiSummaryCard extends StatelessWidget {
 
           // Summary
           if (summary != null) ...[
-            Text(summary, style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic, fontSize: 13)),
+            Text(
+              summary,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontStyle: FontStyle.italic,
+                fontSize: 13,
+              ),
+            ),
             const SizedBox(height: 14),
           ],
 
@@ -78,11 +113,31 @@ class AiSummaryCard extends StatelessWidget {
               children: [
                 Icon(Icons.bolt_rounded, size: 15, color: priorityColor),
                 const SizedBox(width: 6),
-                Text('Action Priority: ', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                Text(
+                  'Action Priority: ',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: priorityColor.withOpacity(0.12), borderRadius: BorderRadius.circular(20), border: Border.all(color: priorityColor.withOpacity(0.4))),
-                  child: Text(priority, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: priorityColor)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: priorityColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: priorityColor.withOpacity(0.4)),
+                  ),
+                  child: Text(
+                    priority,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: priorityColor,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -95,8 +150,17 @@ class AiSummaryCard extends StatelessWidget {
               children: [
                 const Icon(Icons.people_outline, size: 15, color: Colors.grey),
                 const SizedBox(width: 6),
-                Text('Est. Affected: ', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                Text(affected, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                Text(
+                  'Est. Affected: ',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                Text(
+                  affected,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 14),
@@ -104,7 +168,10 @@ class AiSummaryCard extends StatelessWidget {
 
           // Solutions
           if (solutions.isNotEmpty) ...[
-            const Text('Suggested Solutions', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            const Text(
+              'Suggested Solutions',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             ...solutions.asMap().entries.map((e) {
               return Padding(
@@ -116,11 +183,28 @@ class AiSummaryCard extends StatelessWidget {
                       margin: const EdgeInsets.only(top: 3),
                       width: 18,
                       height: 18,
-                      decoration: BoxDecoration(color: Colors.blue.withOpacity(0.15), shape: BoxShape.circle),
-                      child: Center(child: Text('${e.key + 1}', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue.shade700))),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${e.key + 1}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(e.value, style: const TextStyle(fontSize: 13))),
+                    Flexible(
+                      child: Text(
+                        e.value,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -130,9 +214,16 @@ class AiSummaryCard extends StatelessWidget {
 
           // Skillset chips
           if (skills.isNotEmpty) ...[
-            const Text('Skills Required', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            const Text(
+              'Skills Required',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
-            Wrap(spacing: 6, runSpacing: 6, children: skills.map((s) => _SkillChip(label: s)).toList()),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: skills.map((s) => _SkillChip(label: s)).toList(),
+            ),
           ],
         ],
       ),
@@ -165,7 +256,14 @@ class _SkillChip extends StatelessWidget {
         children: [
           Icon(Icons.handshake_outlined, size: 11, color: Colors.blue.shade600),
           const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.blue.shade700, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.blue.shade700,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );

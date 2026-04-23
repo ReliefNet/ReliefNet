@@ -82,7 +82,7 @@ class _HomepageState extends State<Homepage> {
   }
 
   final List<String> _pageTitles = [
-    'Relief Net',
+    'ReliefNet',
     'Report Issue',
     'Dashboard',
     'My Tasks',

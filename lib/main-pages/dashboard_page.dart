@@ -25,8 +25,15 @@ class _DashboardPageState extends State<DashboardPage> {
   Map<String, dynamic>? _userProfile;
   String? _aiDashboardSummary;
   bool _isAnalyzingDashboard = false;
+  bool _summaryRequested = false; // add this field
 
-  final List<String> _sortOptions = ['Nearest', 'Latest', 'Most Urgent', 'Unassigned Only', 'Completed Only'];
+  final List<String> _sortOptions = [
+    'Nearest',
+    'Latest',
+    'Most Urgent',
+    'Unassigned Only',
+    'Completed Only',
+  ];
 
   @override
   void initState() {
@@ -38,16 +45,24 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _loadUserProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
     if (doc.exists && mounted) setState(() => _userProfile = doc.data());
   }
 
-  Future<void> _generateDashboardSummary(List<QueryDocumentSnapshot> docs) async {
-    if (docs.isEmpty || _aiDashboardSummary != null || _isAnalyzingDashboard) return;
-    
+  Future<void> _generateDashboardSummary(
+    List<QueryDocumentSnapshot> docs,
+  ) async {
+    if (docs.isEmpty || _isAnalyzingDashboard) return;
+
     setState(() => _isAnalyzingDashboard = true);
     try {
-      final reports = docs.take(10).map((d) => d.data() as Map<String, dynamic>).toList();
+      final reports = docs
+          .take(10)
+          .map((d) => d.data() as Map<String, dynamic>)
+          .toList();
       final summary = await GeminiService.generateDashboardOverview(reports);
       if (mounted) setState(() => _aiDashboardSummary = summary);
     } finally {
@@ -66,7 +81,9 @@ class _DashboardPageState extends State<DashboardPage> {
         if (permission == LocationPermission.denied) return;
       }
       if (permission == LocationPermission.deniedForever) return;
-      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
       if (mounted) setState(() => _userPosition = pos);
     } catch (_) {
     } finally {
@@ -76,35 +93,49 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Color _urgencyColor(String urgency) {
     switch (urgency) {
-      case 'High': return const Color(0xFFEF4444);
-      case 'Medium': return const Color(0xFFF59E0B);
-      case 'Low': return const Color(0xFF22C55E);
-      default: return Colors.grey;
+      case 'High':
+        return const Color(0xFFEF4444);
+      case 'Medium':
+        return const Color(0xFFF59E0B);
+      case 'Low':
+        return const Color(0xFF22C55E);
+      default:
+        return Colors.grey;
     }
   }
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'assigned': return const Color(0xFF6366F1);
-      case 'completed': return const Color(0xFF22C55E);
-      default: return const Color(0xFF9CA3AF);
+      case 'assigned':
+        return const Color(0xFF6366F1);
+      case 'completed':
+        return const Color(0xFF22C55E);
+      default:
+        return const Color(0xFF9CA3AF);
     }
   }
 
   IconData _statusIcon(String status) {
     switch (status) {
-      case 'assigned': return Icons.person_outline;
-      case 'completed': return Icons.check_circle_outline;
-      default: return Icons.radio_button_unchecked;
+      case 'assigned':
+        return Icons.person_outline;
+      case 'completed':
+        return Icons.check_circle_outline;
+      default:
+        return Icons.radio_button_unchecked;
     }
   }
 
   IconData _issueIcon(String type) {
     switch (type) {
-      case 'Food': return Icons.restaurant_outlined;
-      case 'Medical': return Icons.local_hospital_outlined;
-      case 'Shelter': return Icons.home_outlined;
-      default: return Icons.help_outline;
+      case 'Food':
+        return Icons.restaurant_outlined;
+      case 'Medical':
+        return Icons.local_hospital_outlined;
+      case 'Shelter':
+        return Icons.home_outlined;
+      default:
+        return Icons.help_outline;
     }
   }
 
@@ -122,7 +153,12 @@ class _DashboardPageState extends State<DashboardPage> {
     const R = 6371.0;
     final dLat = _deg2rad(lat - _userPosition!.latitude);
     final dLng = _deg2rad(lng - _userPosition!.longitude);
-    final a = sin(dLat / 2) * sin(dLat / 2) + cos(_deg2rad(_userPosition!.latitude)) * cos(_deg2rad(lat)) * sin(dLng / 2) * sin(dLng / 2);
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
+        cos(_deg2rad(_userPosition!.latitude)) *
+            cos(_deg2rad(lat)) *
+            sin(dLng / 2) *
+            sin(dLng / 2);
     return R * 2 * atan2(sqrt(a), sqrt(1 - a));
   }
 
@@ -133,15 +169,21 @@ class _DashboardPageState extends State<DashboardPage> {
     if (_userPosition == null) return 'Fetching location...';
     final d = _distanceKm(lat, lng);
     if (d == double.infinity) return 'Distance unknown';
-    return d < 1 ? '${(d * 1000).toStringAsFixed(0)} m away' : '${d.toStringAsFixed(1)} km away';
+    return d < 1
+        ? '${(d * 1000).toStringAsFixed(0)} m away'
+        : '${d.toStringAsFixed(1)} km away';
   }
 
   int _urgencyRank(String urgency) {
     switch (urgency) {
-      case 'High': return 0;
-      case 'Medium': return 1;
-      case 'Low': return 2;
-      default: return 3;
+      case 'High':
+        return 0;
+      case 'Medium':
+        return 1;
+      case 'Low':
+        return 2;
+      default:
+        return 3;
     }
   }
 
@@ -150,11 +192,16 @@ class _DashboardPageState extends State<DashboardPage> {
     return (data['status'] ?? 'unassigned') == 'completed';
   }
 
-  List<QueryDocumentSnapshot> _applyFilterAndSort(List<QueryDocumentSnapshot> docs) {
-    List<QueryDocumentSnapshot> filtered = _selectedFilter == 'All' ? docs : docs.where((d) => d['urgency'] == _selectedFilter).toList();
+  List<QueryDocumentSnapshot> _applyFilterAndSort(
+    List<QueryDocumentSnapshot> docs,
+  ) {
+    List<QueryDocumentSnapshot> filtered = _selectedFilter == 'All'
+        ? docs
+        : docs.where((d) => d['urgency'] == _selectedFilter).toList();
     final sorted = List<QueryDocumentSnapshot>.from(filtered);
 
-    if (_selectedSort == 'Completed Only') return sorted.where((d) => _isCompleted(d)).toList();
+    if (_selectedSort == 'Completed Only')
+      return sorted.where((d) => _isCompleted(d)).toList();
     if (_selectedSort == 'Unassigned Only') {
       return sorted.where((d) {
         final data = d.data() as Map<String, dynamic>;
@@ -167,22 +214,33 @@ class _DashboardPageState extends State<DashboardPage> {
         sorted.sort((a, b) {
           final da = a.data() as Map<String, dynamic>;
           final db = b.data() as Map<String, dynamic>;
-          return _urgencyRank(da['urgency'] ?? '').compareTo(_urgencyRank(db['urgency'] ?? ''));
+          return _urgencyRank(
+            da['urgency'] ?? '',
+          ).compareTo(_urgencyRank(db['urgency'] ?? ''));
         });
         break;
       case 'Nearest':
         sorted.sort((a, b) {
           final da = a.data() as Map<String, dynamic>;
           final db = b.data() as Map<String, dynamic>;
-          return _distanceKm((da['lat'] ?? 0).toDouble(), (da['lng'] ?? 0).toDouble())
-              .compareTo(_distanceKm((db['lat'] ?? 0).toDouble(), (db['lng'] ?? 0).toDouble()));
+          return _distanceKm(
+            (da['lat'] ?? 0).toDouble(),
+            (da['lng'] ?? 0).toDouble(),
+          ).compareTo(
+            _distanceKm(
+              (db['lat'] ?? 0).toDouble(),
+              (db['lng'] ?? 0).toDouble(),
+            ),
+          );
         });
         break;
       case 'Latest':
       default:
         sorted.sort((a, b) {
-          final ta = (a['timestamp'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
-          final tb = (b['timestamp'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+          final ta =
+              (a['timestamp'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+          final tb =
+              (b['timestamp'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
           return tb.compareTo(ta);
         });
     }
@@ -192,7 +250,11 @@ class _DashboardPageState extends State<DashboardPage> {
     return [...active, ...completed];
   }
 
-  void _showReportDetail(BuildContext context, Map<String, dynamic> data, String docId) {
+  void _showReportDetail(
+    BuildContext context,
+    Map<String, dynamic> data,
+    String docId,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -201,7 +263,10 @@ class _DashboardPageState extends State<DashboardPage> {
         data: data,
         docId: docId,
         userProfile: _userProfile,
-        distanceLabel: _distanceLabel(data['lat'] as double?, data['lng'] as double?),
+        distanceLabel: _distanceLabel(
+          data['lat'] as double?,
+          data['lng'] as double?,
+        ),
         urgencyColor: _urgencyColor(data['urgency'] ?? 'Low'),
         statusColor: _statusColor(data['status'] ?? 'unassigned'),
         statusIcon: _statusIcon(data['status'] ?? 'unassigned'),
@@ -216,10 +281,15 @@ class _DashboardPageState extends State<DashboardPage> {
     final theme = Theme.of(context);
 
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('reports').orderBy('timestamp', descending: true).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('reports')
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) return const Center(child: Text('Something went wrong'));
-        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+        if (snapshot.hasError)
+          return const Center(child: Text('Something went wrong'));
+        if (snapshot.connectionState == ConnectionState.waiting)
+          return const Center(child: CircularProgressIndicator());
 
         final allDocs = snapshot.data!.docs;
         final total = allDocs.length;
@@ -229,8 +299,12 @@ class _DashboardPageState extends State<DashboardPage> {
         final displayDocs = _applyFilterAndSort(allDocs);
 
         // Trigger AI summary once docs are loaded
-        if (allDocs.isNotEmpty && _aiDashboardSummary == null && !_isAnalyzingDashboard) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _generateDashboardSummary(allDocs));
+        if (allDocs.isNotEmpty && !_summaryRequested) {
+          _summaryRequested = true;
+          // Give the page 800ms to fully render before hitting Gemini
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (mounted) _generateDashboardSummary(allDocs);
+          });
         }
 
         return SingleChildScrollView(
@@ -245,62 +319,125 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Live Reports', style: theme.textTheme.bodyLarge?.copyWith(fontSize: 22, fontWeight: FontWeight.bold)),
+                        Text(
+                          'Live Reports',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        Text('$total active reports', style: theme.textTheme.bodyMedium),
+                        Text(
+                          '$total active reports',
+                          style: theme.textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   ),
                   if (_fetchingLocation)
-                    const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   else if (_userPosition != null)
-                    Icon(Icons.location_on, size: 16, color: theme.colorScheme.primary)
+                    Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    )
                   else
-                    IconButton(icon: const Icon(Icons.location_off_outlined), tooltip: 'Enable location for distance', onPressed: _fetchUserLocation),
+                    IconButton(
+                      icon: const Icon(Icons.location_off_outlined),
+                      tooltip: 'Enable location for distance',
+                      onPressed: _fetchUserLocation,
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
 
               // ── AI Insights Section ──
-              if (_isAnalyzingDashboard || _aiDashboardSummary != null) ...[
+              if (_aiDashboardSummary != null) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [theme.colorScheme.primary.withOpacity(0.05), theme.colorScheme.primary.withOpacity(0.12)],
+                      colors: [
+                        theme.colorScheme.primary.withOpacity(0.05),
+                        theme.colorScheme.primary.withOpacity(0.12),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withOpacity(0.2),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.auto_awesome, size: 18, color: Colors.blue),
+                          const Icon(
+                            Icons.auto_awesome,
+                            size: 18,
+                            color: Colors.blue,
+                          ),
                           const SizedBox(width: 8),
-                          Text('AI Situation Summary', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+                          Text(
+                            'AI Situation Summary',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
                           const Spacer(),
                           if (_isAnalyzingDashboard)
-                            const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
+                            const SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           else
                             InkWell(
                               onTap: () {
-                                setState(() => _aiDashboardSummary = null);
+                                setState(() {
+                                  _aiDashboardSummary = null;
+                                  _summaryRequested = false;
+                                });
                                 _generateDashboardSummary(allDocs);
                               },
-                              child: Icon(Icons.refresh, size: 16, color: theme.colorScheme.primary.withOpacity(0.5)),
+                              child: Icon(
+                                Icons.refresh,
+                                size: 16,
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.5,
+                                ),
+                              ),
                             ),
                         ],
                       ),
                       const SizedBox(height: 10),
                       if (_isAnalyzingDashboard && _aiDashboardSummary == null)
-                        Text('Analyzing current crisis data...', style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic, color: Colors.grey))
+                        Text(
+                          'Analyzing current crisis data...',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey,
+                          ),
+                        )
                       else
-                        Text(_aiDashboardSummary ?? '', style: theme.textTheme.bodyMedium?.copyWith(height: 1.4, fontSize: 13, fontWeight: FontWeight.w500)),
+                        Text(
+                          _aiDashboardSummary ?? '',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            height: 1.4,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -310,13 +447,37 @@ class _DashboardPageState extends State<DashboardPage> {
               // ── Filter chips ──
               Row(
                 children: [
-                  _FilterChip(label: 'All', count: total, color: theme.colorScheme.primary, isSelected: _selectedFilter == 'All', onTap: () => setState(() => _selectedFilter = 'All')),
+                  _FilterChip(
+                    label: 'All',
+                    count: total,
+                    color: theme.colorScheme.primary,
+                    isSelected: _selectedFilter == 'All',
+                    onTap: () => setState(() => _selectedFilter = 'All'),
+                  ),
                   const SizedBox(width: 8),
-                  _FilterChip(label: 'High', count: high, color: const Color(0xFFEF4444), isSelected: _selectedFilter == 'High', onTap: () => setState(() => _selectedFilter = 'High')),
+                  _FilterChip(
+                    label: 'High',
+                    count: high,
+                    color: const Color(0xFFEF4444),
+                    isSelected: _selectedFilter == 'High',
+                    onTap: () => setState(() => _selectedFilter = 'High'),
+                  ),
                   const SizedBox(width: 8),
-                  _FilterChip(label: 'Medium', count: medium, color: const Color(0xFFF59E0B), isSelected: _selectedFilter == 'Medium', onTap: () => setState(() => _selectedFilter = 'Medium')),
+                  _FilterChip(
+                    label: 'Medium',
+                    count: medium,
+                    color: const Color(0xFFF59E0B),
+                    isSelected: _selectedFilter == 'Medium',
+                    onTap: () => setState(() => _selectedFilter = 'Medium'),
+                  ),
                   const SizedBox(width: 8),
-                  _FilterChip(label: 'Low', count: low, color: const Color(0xFF22C55E), isSelected: _selectedFilter == 'Low', onTap: () => setState(() => _selectedFilter = 'Low')),
+                  _FilterChip(
+                    label: 'Low',
+                    count: low,
+                    color: const Color(0xFF22C55E),
+                    isSelected: _selectedFilter == 'Low',
+                    onTap: () => setState(() => _selectedFilter = 'Low'),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -333,13 +494,31 @@ class _DashboardPageState extends State<DashboardPage> {
                         onTap: () => setState(() => _selectedSort = opt),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: selected ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: selected ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.25)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 7,
                           ),
-                          child: Text(opt, style: TextStyle(color: selected ? Colors.white : theme.colorScheme.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.primary.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: selected
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.primary.withOpacity(0.25),
+                            ),
+                          ),
+                          child: Text(
+                            opt,
+                            style: TextStyle(
+                              color: selected
+                                  ? Colors.white
+                                  : theme.colorScheme.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                     );
@@ -354,9 +533,16 @@ class _DashboardPageState extends State<DashboardPage> {
                     padding: const EdgeInsets.only(top: 60),
                     child: Column(
                       children: [
-                        Icon(Icons.inbox_outlined, size: 48, color: theme.colorScheme.primary.withOpacity(0.4)),
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 48,
+                          color: theme.colorScheme.primary.withOpacity(0.4),
+                        ),
                         const SizedBox(height: 12),
-                        Text('No reports found', style: theme.textTheme.bodyMedium),
+                        Text(
+                          'No reports found',
+                          style: theme.textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   ),
@@ -382,8 +568,17 @@ class _DashboardPageState extends State<DashboardPage> {
                     final isCompleted = status == 'completed';
 
                     // AI data
-                    final aiSummary = data['aiSummary'] as Map<String, dynamic>?;
-                    final skills = aiSummary != null ? List<String>.from(aiSummary['skillset_required'] ?? []) : <String>[];
+                    final aiSummary =
+                        data['aiSummary'] as Map<String, dynamic>?;
+                    print(
+                      'DEBUG aiSummary for ${doc.id}: $aiSummary',
+                    ); // add this
+
+                    final skills = aiSummary != null
+                        ? List<String>.from(
+                            aiSummary['skillset_required'] ?? [],
+                          )
+                        : <String>[];
 
                     return Opacity(
                       opacity: isCompleted ? 0.55 : 1.0,
@@ -400,41 +595,97 @@ class _DashboardPageState extends State<DashboardPage> {
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                                      child: Icon(_issueIcon(issueType), color: theme.colorScheme.primary, size: 20),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        _issueIcon(issueType),
+                                        color: theme.colorScheme.primary,
+                                        size: 20,
+                                      ),
                                     ),
                                     const SizedBox(width: 10),
-                                    Expanded(child: Text(issueType, style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600))),
-                                    _Badge(label: urgency, color: urgencyColor, icon: Icons.circle, iconSize: 8),
+                                    Expanded(
+                                      child: Text(
+                                        issueType,
+                                        style: theme.textTheme.bodyLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ),
+                                    _Badge(
+                                      label: urgency,
+                                      color: urgencyColor,
+                                      icon: Icons.circle,
+                                      iconSize: 8,
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
-                                Text(description, style: theme.textTheme.bodyMedium, maxLines: 2, overflow: TextOverflow.ellipsis),
+                                Text(
+                                  description,
+                                  style: theme.textTheme.bodyMedium,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
 
                                 // ── AI skillset chips on card ──
                                 if (skills.isNotEmpty) ...[
                                   const SizedBox(height: 10),
-                                  AiSummaryCard(aiSummary: aiSummary!, compact: true),
+                                  AiSummaryCard(
+                                    aiSummary: aiSummary!,
+                                    compact: true,
+                                  ),
                                 ],
 
                                 const SizedBox(height: 10),
                                 Row(
                                   children: [
-                                    Icon(Icons.near_me_outlined, size: 14, color: theme.textTheme.bodyMedium?.color),
+                                    Icon(
+                                      Icons.near_me_outlined,
+                                      size: 14,
+                                      color: theme.textTheme.bodyMedium?.color,
+                                    ),
                                     const SizedBox(width: 4),
-                                    Text(_distanceLabel(lat, lng), style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12)),
+                                    Text(
+                                      _distanceLabel(lat, lng),
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(fontSize: 12),
+                                    ),
                                     const Spacer(),
-                                    _Badge(label: status[0].toUpperCase() + status.substring(1), color: statusColor, icon: _statusIcon(status), iconSize: 12),
+                                    _Badge(
+                                      label:
+                                          status[0].toUpperCase() +
+                                          status.substring(1),
+                                      color: statusColor,
+                                      icon: _statusIcon(status),
+                                      iconSize: 12,
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 6),
                                 Row(
                                   children: [
-                                    Icon(Icons.access_time, size: 13, color: theme.textTheme.bodyMedium?.color),
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 13,
+                                      color: theme.textTheme.bodyMedium?.color,
+                                    ),
                                     const SizedBox(width: 4),
-                                    Text(_timeAgo(timestamp), style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12)),
+                                    Text(
+                                      _timeAgo(timestamp),
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(fontSize: 12),
+                                    ),
                                     const Spacer(),
-                                    Icon(Icons.chevron_right, size: 18, color: theme.textTheme.bodyMedium?.color),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      size: 18,
+                                      color: theme.textTheme.bodyMedium?.color,
+                                    ),
                                   ],
                                 ),
                               ],
@@ -506,7 +757,10 @@ class _ReportDetailSheet extends StatelessWidget {
         );
       }
     } catch (e) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (context.mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -533,8 +787,12 @@ class _ReportDetailSheet extends StatelessWidget {
           children: [
             Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.grey.withOpacity(0.4), borderRadius: BorderRadius.circular(2)),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             Expanded(
               child: ListView(
@@ -546,20 +804,43 @@ class _ReportDetailSheet extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                        child: Icon(issueIcon, color: theme.colorScheme.primary, size: 24),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          issueIcon,
+                          color: theme.colorScheme.primary,
+                          size: 24,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(data['issueType'] ?? 'Other', style: theme.textTheme.bodyLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold)),
-                            Text(timeAgo, style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12)),
+                            Text(
+                              data['issueType'] ?? 'Other',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              timeAgo,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      _Badge(label: data['urgency'] ?? 'Low', color: urgencyColor, icon: Icons.circle, iconSize: 8),
+                      _Badge(
+                        label: data['urgency'] ?? 'Low',
+                        color: urgencyColor,
+                        icon: Icons.circle,
+                        iconSize: 8,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -568,19 +849,44 @@ class _ReportDetailSheet extends StatelessWidget {
                     children: [
                       Icon(statusIcon, size: 14, color: statusColor),
                       const SizedBox(width: 6),
-                      Text(_status[0].toUpperCase() + _status.substring(1), style: TextStyle(color: statusColor, fontSize: 13, fontWeight: FontWeight.w600)),
+                      Text(
+                        _status[0].toUpperCase() + _status.substring(1),
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Icon(Icons.near_me_outlined, size: 14, color: theme.textTheme.bodyMedium?.color),
+                      Icon(
+                        Icons.near_me_outlined,
+                        size: 14,
+                        color: theme.textTheme.bodyMedium?.color,
+                      ),
                       const SizedBox(width: 4),
-                      Text(distanceLabel, style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+                      Text(
+                        distanceLabel,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
 
-                  _DetailSection(title: 'Description', child: Text(data['description'] ?? '', style: theme.textTheme.bodyMedium?.copyWith(height: 1.5))),
+                  _DetailSection(
+                    title: 'Description',
+                    child: Text(
+                      data['description'] ?? '',
+                      style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
-                  _DetailSection(title: 'Location', child: _buildLocationSection(context, theme)),
+                  _DetailSection(
+                    title: 'Location',
+                    child: _buildLocationSection(context, theme),
+                  ),
                   const SizedBox(height: 20),
 
                   // ── AI Analysis (full card) ──
@@ -594,7 +900,13 @@ class _ReportDetailSheet extends StatelessWidget {
 
                   _DetailSection(
                     title: 'Report ID',
-                    child: Text(docId, style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12, fontFamily: 'monospace')),
+                    child: Text(
+                      docId,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 12,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 28),
 
@@ -612,7 +924,8 @@ class _ReportDetailSheet extends StatelessWidget {
     final lat = data['lat'] as double?;
     final lng = data['lng'] as double?;
 
-    if (lat == null || lng == null) return Text('No location data', style: theme.textTheme.bodyMedium);
+    if (lat == null || lng == null)
+      return Text('No location data', style: theme.textTheme.bodyMedium);
 
     if (_alreadyAccepted || _status == 'completed') {
       return Column(
@@ -620,7 +933,11 @@ class _ReportDetailSheet extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.near_me_outlined, size: 14, color: theme.textTheme.bodyMedium?.color),
+              Icon(
+                Icons.near_me_outlined,
+                size: 14,
+                color: theme.textTheme.bodyMedium?.color,
+              ),
               const SizedBox(width: 6),
               Text(distanceLabel, style: theme.textTheme.bodyMedium),
             ],
@@ -630,11 +947,21 @@ class _ReportDetailSheet extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: Image.network(
               'https://maps.googleapis.com/maps/api/staticmap?center=$lat,$lng&zoom=15&size=600x200&markers=color:red%7C$lat,$lng&key=YOUR_GOOGLE_MAPS_API_KEY',
-              height: 180, width: double.infinity, fit: BoxFit.cover,
+              height: 180,
+              width: double.infinity,
+              fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
                 height: 180,
-                decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
-                child: Center(child: Text('Add API key to enable map preview', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12))),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    'Add API key to enable map preview',
+                    style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
+                  ),
+                ),
               ),
             ),
           ),
@@ -643,8 +970,11 @@ class _ReportDetailSheet extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () async {
-                final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
-                if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+                final uri = Uri.parse(
+                  'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+                );
+                if (await canLaunchUrl(uri))
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
               },
               icon: const Icon(Icons.open_in_new, size: 16),
               label: const Text('Open in Google Maps'),
@@ -656,9 +986,18 @@ class _ReportDetailSheet extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(Icons.lock_outline, size: 14, color: theme.colorScheme.primary.withOpacity(0.6)),
+        Icon(
+          Icons.lock_outline,
+          size: 14,
+          color: theme.colorScheme.primary.withOpacity(0.6),
+        ),
         const SizedBox(width: 8),
-        Expanded(child: Text('$distanceLabel · Accept task to view map', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13))),
+        Expanded(
+          child: Text(
+            '$distanceLabel · Accept task to view map',
+            style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13),
+          ),
+        ),
       ],
     );
   }
@@ -667,12 +1006,25 @@ class _ReportDetailSheet extends StatelessWidget {
     if (!_isVolunteer) {
       return Container(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(10), border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2))),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+        ),
         child: Row(
           children: [
-            Icon(Icons.lock_outline, size: 16, color: theme.colorScheme.primary),
+            Icon(
+              Icons.lock_outline,
+              size: 16,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(width: 10),
-            Expanded(child: Text('Only verified NGO volunteers can accept tasks.', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13))),
+            Expanded(
+              child: Text(
+                'Only verified NGO volunteers can accept tasks.',
+                style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13),
+              ),
+            ),
           ],
         ),
       );
@@ -681,12 +1033,23 @@ class _ReportDetailSheet extends StatelessWidget {
     if (_status == 'completed') {
       return Container(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: const Color(0xFF22C55E).withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.3))),
+        decoration: BoxDecoration(
+          color: const Color(0xFF22C55E).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.3)),
+        ),
         child: Row(
           children: [
-            const Icon(Icons.check_circle_outline, size: 18, color: Color(0xFF22C55E)),
+            const Icon(
+              Icons.check_circle_outline,
+              size: 18,
+              color: Color(0xFF22C55E),
+            ),
             const SizedBox(width: 10),
-            Text('This task has been completed.', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+            Text(
+              'This task has been completed.',
+              style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13),
+            ),
           ],
         ),
       );
@@ -699,7 +1062,11 @@ class _ReportDetailSheet extends StatelessWidget {
           onPressed: () => _goToVolunteerTask(context),
           icon: const Icon(Icons.volunteer_activism_outlined),
           label: const Text('Go to My Tasks → Submit Proof'),
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF22C55E), foregroundColor: Colors.white, padding: const EdgeInsets.all(14.0)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF22C55E),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.all(14.0),
+          ),
         ),
       );
     }
@@ -710,7 +1077,9 @@ class _ReportDetailSheet extends StatelessWidget {
         onPressed: () => _acceptTask(context),
         icon: const Icon(Icons.handshake_outlined),
         label: const Text('Accept Task'),
-        style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+        ),
       ),
     );
   }
@@ -733,81 +1102,174 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
 
   Future<void> _pickPhoto() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
     if (picked != null) setState(() => _photo = File(picked.path));
   }
 
   Future<void> _submit() async {
-    if (_photo == null) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please attach a photo as proof'))); return; }
-    if (_noteController.text.trim().isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please add a note'))); return; }
+    if (_photo == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please attach a photo as proof')),
+      );
+      return;
+    }
+    if (_noteController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please add a note')));
+      return;
+    }
 
     setState(() => _submitting = true);
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
     try {
-      final ref = FirebaseStorage.instance.ref('proofs/${widget.docId}/$uid-${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final ref = FirebaseStorage.instance.ref(
+        'proofs/${widget.docId}/$uid-${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
       await ref.putFile(_photo!);
       final photoUrl = await ref.getDownloadURL();
 
-      await FirebaseFirestore.instance.collection('reports').doc(widget.docId).collection('proofs').add({
-        'volunteerId': uid, 'photoUrl': photoUrl, 'note': _noteController.text.trim(), 'submittedAt': FieldValue.serverTimestamp(),
-      });
-      await FirebaseFirestore.instance.collection('reports').doc(widget.docId).update({'status': 'completed'});
+      await FirebaseFirestore.instance
+          .collection('reports')
+          .doc(widget.docId)
+          .collection('proofs')
+          .add({
+            'volunteerId': uid,
+            'photoUrl': photoUrl,
+            'note': _noteController.text.trim(),
+            'submittedAt': FieldValue.serverTimestamp(),
+          });
+      await FirebaseFirestore.instance
+          .collection('reports')
+          .doc(widget.docId)
+          .update({'status': 'completed'});
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Proof submitted! Task marked as completed.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Proof submitted! Task marked as completed.'),
+          ),
+        );
         Navigator.pop(context);
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
   }
 
   @override
-  void dispose() { _noteController.dispose(); super.dispose(); }
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-        decoration: BoxDecoration(color: theme.cardTheme.color ?? theme.scaffoldBackgroundColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
+        decoration: BoxDecoration(
+          color: theme.cardTheme.color ?? theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withOpacity(0.4), borderRadius: BorderRadius.circular(2)))),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
-            Text('Submit Completion Proof', style: theme.textTheme.bodyLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Submit Completion Proof',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 20),
             GestureDetector(
               onTap: _pickPhoto,
               child: Container(
-                height: 160, width: double.infinity,
-                decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: theme.colorScheme.primary.withOpacity(0.25))),
+                height: 160,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.25),
+                  ),
+                ),
                 child: _photo != null
-                    ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(_photo!, fit: BoxFit.cover))
-                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(Icons.add_photo_alternate_outlined, size: 36, color: theme.colorScheme.primary.withOpacity(0.5)),
-                        const SizedBox(height: 8),
-                        Text('Tap to attach photo', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
-                      ]),
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(_photo!, fit: BoxFit.cover),
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 36,
+                            color: theme.colorScheme.primary.withOpacity(0.5),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap to attach photo',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
             const SizedBox(height: 16),
-            TextField(controller: _noteController, maxLines: 3, decoration: const InputDecoration(hintText: 'Add a note about what was done...', border: OutlineInputBorder())),
+            TextField(
+              controller: _noteController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Add a note about what was done...',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _submitting ? null : _submit,
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF22C55E), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
-                child: _submitting ? const CircularProgressIndicator(color: Colors.white) : const Text('Submit Proof', style: TextStyle(fontSize: 16)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF22C55E),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: _submitting
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'Submit Proof',
+                        style: TextStyle(fontSize: 16),
+                      ),
               ),
             ),
           ],
@@ -820,22 +1282,58 @@ class _ProofSubmissionSheetState extends State<_ProofSubmissionSheet> {
 // ─── Shared small widgets ─────────────────────────────────────────────────────
 
 class _Badge extends StatelessWidget {
-  const _Badge({required this.label, required this.color, required this.icon, required this.iconSize});
-  final String label; final Color color; final IconData icon; final double iconSize;
+  const _Badge({
+    required this.label,
+    required this.color,
+    required this.icon,
+    required this.iconSize,
+  });
+  final String label;
+  final Color color;
+  final IconData icon;
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.4))),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: iconSize, color: color), const SizedBox(width: 5), Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600))]),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: iconSize, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.count, required this.color, required this.isSelected, required this.onTap});
-  final String label; final int count; final Color color; final bool isSelected; final VoidCallback onTap;
+  const _FilterChip({
+    required this.label,
+    required this.count,
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+  final String label;
+  final int count;
+  final Color color;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -845,12 +1343,35 @@ class _FilterChip extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(color: isSelected ? color : color.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: isSelected ? color : color.withOpacity(0.3), width: isSelected ? 2 : 1)),
-          child: Column(children: [
-            Text('$count', style: TextStyle(color: isSelected ? Colors.white : color, fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 2),
-            Text(label, style: TextStyle(color: isSelected ? Colors.white : color, fontSize: 11, fontWeight: FontWeight.w500)),
-          ]),
+          decoration: BoxDecoration(
+            color: isSelected ? color : color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? color : color.withOpacity(0.3),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                '$count',
+                style: TextStyle(
+                  color: isSelected ? Colors.white : color,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -859,7 +1380,8 @@ class _FilterChip extends StatelessWidget {
 
 class _DetailSection extends StatelessWidget {
   const _DetailSection({required this.title, required this.child});
-  final String title; final Widget child;
+  final String title;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -867,7 +1389,15 @@ class _DetailSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title.toUpperCase(), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: theme.colorScheme.primary)),
+        Text(
+          title.toUpperCase(),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+            color: theme.colorScheme.primary,
+          ),
+        ),
         const SizedBox(height: 6),
         child,
       ],

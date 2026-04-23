@@ -1,32 +1,77 @@
 import 'dart:convert';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 
 class GeminiService {
   static const _apiKey = String.fromEnvironment('GOOGLE_API_KEY');
+  static const _baseUrl =
+      'https://generativelanguage.googleapis.com/v1beta/models';
+  static const _model = 'gemini-3.1-flash-lite-preview';
 
-  static final _model = GenerativeModel(
-    model: 'gemini-3.1-flash-lite-preview',
-    apiKey: _apiKey,
-  );
-
-  static Future<String?> generateDashboardOverview(List<Map<String, dynamic>> reports) async {
-    if (reports.isEmpty) return null;
-    final reportsText = reports.map((r) => "- Type: ${r['issueType']}, Urgency: ${r['urgency']}, Description: ${r['description']}").join('\n');
-    final prompt = 'Summarize these crisis reports in 2-3 sentences:\n$reportsText';
+  static Future<String?> _callGemini(String prompt) async {
     try {
-      final response = await _model.generateContent([Content.text(prompt)]);
-      return response.text?.trim();
-    } catch (_) { return null; }
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/$_model:generateContent?key=$_apiKey'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'contents': [
+                {
+                  'parts': [
+                    {'text': prompt},
+                  ],
+                },
+              ],
+              'generationConfig': {'temperature': 0.7, 'maxOutputTokens': 1024},
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode != 200) {
+        print('GEMINI ERROR: ${response.statusCode} ${response.body}');
+        return null;
+      }
+
+      final data = jsonDecode(response.body);
+      return data['candidates']?[0]?['content']?['parts']?[0]?['text']
+          as String?;
+    } catch (e) {
+      print('GEMINI ERROR: $e');
+      return null;
+    }
   }
+
+  // ── Dashboard overview ────────────────────────────────────────────────────
+
+  static Future<String?> generateDashboardOverview(
+    List<Map<String, dynamic>> reports,
+  ) async {
+    if (reports.isEmpty) return null;
+
+    final reportsText = reports
+        .take(10)
+        .map(
+          (r) =>
+              '- Type: ${r['issueType']}, Urgency: ${r['urgency']}, Description: ${r['description']}',
+        )
+        .join('\n');
+
+    final prompt =
+        'Summarize these crisis reports in 2-3 sentences for an NGO dashboard. '
+        'Highlight the most urgent issues and overall situation:\n$reportsText';
+
+    return await _callGemini(prompt);
+  }
+
+  // ── Per-report analysis ───────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>?> analyzeReport({
     required String issueType,
     required String urgency,
     required String description,
   }) async {
-    final prompt = '''
+    final prompt =
+        '''
 You are an AI assistant for ReliefNet, an NGO field reporting platform.
 Analyze the following field report and respond ONLY with a valid JSON object. No explanation, no markdown, no backticks.
 
@@ -47,67 +92,80 @@ Respond with exactly this JSON structure:
 Keep solutions practical and specific to the issue type. Keep each skillset item short (1-3 words each, e.g. "First Aid", "Logistics", "Counseling").
 ''';
 
+    final text = await _callGemini(prompt);
+    if (text == null) return null;
+
     try {
-      final response = await _model.generateContent([Content.text(prompt)]);
-      final text = response.text ?? '';
-      
-      final jsonStartIndex = text.indexOf('{');
-      final jsonEndIndex = text.lastIndexOf('}');
-      
-      if (jsonStartIndex != -1 && jsonEndIndex != -1) {
-        final jsonString = text.substring(jsonStartIndex, jsonEndIndex + 1);
-        return jsonDecode(jsonString) as Map<String, dynamic>;
+      final start = text.indexOf('{');
+      final end = text.lastIndexOf('}');
+      if (start != -1 && end != -1) {
+        return jsonDecode(text.substring(start, end + 1))
+            as Map<String, dynamic>;
       }
-      return null;
     } catch (e) {
-      print('GEMINI ERROR: $e');
-      return null;
+      print('GEMINI JSON PARSE ERROR: $e');
     }
+    return null;
   }
 
-  /// ULTIMATE HOSPITAL SEARCH: Uses SearchText (more permissive) and AI Fallback
-  static Future<List<Map<String, dynamic>>> getNearbyHospitals(double lat, double lng, String address) async {
+  // ── Nearby hospitals ──────────────────────────────────────────────────────
+
+  static Future<List<Map<String, dynamic>>> getNearbyHospitals(
+    double lat,
+    double lng,
+    String address,
+  ) async {
     List<Map<String, dynamic>> results = [];
     final Set<String> seenNames = {};
 
-    void addUniqueResult(String name, String addr, double pLat, double pLng, dynamic rating) {
+    void addUniqueResult(
+      String name,
+      String addr,
+      double pLat,
+      double pLng,
+      dynamic rating,
+    ) {
       final normalizedName = name.toLowerCase().trim();
       if (!seenNames.contains(normalizedName)) {
         seenNames.add(normalizedName);
-        final distanceInKm = Geolocator.distanceBetween(lat, lng, pLat, pLng) / 1000;
-        
-        // Hospital search limited to 7km for feasibility in urgent situations
+        final distanceInKm =
+            Geolocator.distanceBetween(lat, lng, pLat, pLng) / 1000;
         if (distanceInKm <= 7.0) {
           results.add({
-            "name": name,
-            "address": addr,
-            "distance": distanceInKm.toStringAsFixed(1),
-            "rating": rating?.toString() ?? "4.2"
+            'name': name,
+            'address': addr,
+            'distance': distanceInKm.toStringAsFixed(1),
+            'rating': rating?.toString() ?? '4.2',
           });
         }
       }
     }
 
+    // Primary: Google Places API
     try {
-      final url = Uri.parse('https://places.googleapis.com/v1/places:searchText');
+      final url = Uri.parse(
+        'https://places.googleapis.com/v1/places:searchText',
+      );
       final headers = {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': _apiKey,
-        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.rating'
+        'X-Goog-FieldMask':
+            'places.displayName,places.formattedAddress,places.location,places.rating',
       };
-      
       final body = jsonEncode({
-        "textQuery": "hospitals and medical centers near $address",
-        "locationBias": {
-          "circle": {
-            "center": {"latitude": lat, "longitude": lng},
-            "radius": 7000.0 // Radius set to 7km
-          }
-        }
+        'textQuery': 'hospitals and medical centers near $address',
+        'locationBias': {
+          'circle': {
+            'center': {'latitude': lat, 'longitude': lng},
+            'radius': 7000.0,
+          },
+        },
       });
 
-      final response = await http.post(url, headers: headers, body: body).timeout(const Duration(seconds: 8));
-      
+      final response = await http
+          .post(url, headers: headers, body: body)
+          .timeout(const Duration(seconds: 8));
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final List<dynamic> places = data['places'] ?? [];
@@ -115,42 +173,56 @@ Keep solutions practical and specific to the issue type. Keep each skillset item
           final loc = p['location'];
           if (loc != null) {
             addUniqueResult(
-              p['displayName']?['text'] ?? "Hospital",
-              p['formattedAddress'] ?? "Address unavailable",
+              p['displayName']?['text'] ?? 'Hospital',
+              p['formattedAddress'] ?? 'Address unavailable',
               loc['latitude'],
               loc['longitude'],
-              p['rating']
+              p['rating'],
             );
           }
         }
       }
     } catch (e) {
-      print("Places SearchText Exception: $e");
+      print('Places SearchText Exception: $e');
     }
 
+    // Fallback: Gemini AI
     if (results.isEmpty) {
       results = await _getNearbyHospitalsFallback(lat, lng, address);
     }
 
     if (results.isNotEmpty) {
-      results.sort((a, b) => double.parse(a['distance']).compareTo(double.parse(b['distance'])));
+      results.sort(
+        (a, b) =>
+            double.parse(a['distance']).compareTo(double.parse(b['distance'])),
+      );
     }
-    
+
     return results;
   }
 
-  static Future<List<Map<String, dynamic>>> _getNearbyHospitalsFallback(double lat, double lng, String address) async {
-    final prompt = '''
+  static Future<List<Map<String, dynamic>>> _getNearbyHospitalsFallback(
+    double lat,
+    double lng,
+    String address,
+  ) async {
+    final prompt =
+        '''
 Identify exactly 5 REAL, PHYSICALLY EXISTING hospitals or major 24/7 medical centers located within 7km of these coordinates: $lat, $lng (Location: $address).
 Return ONLY a valid JSON list of objects with these keys: "name", "address", "distance" (estimated km from user), "rating" (1-5).
+No explanation, no markdown, no backticks.
 ''';
+
+    final text = await _callGemini(prompt);
+    if (text == null) return [];
+
     try {
-      final response = await _model.generateContent([Content.text(prompt)]);
-      final text = response.text ?? '[]';
       final start = text.indexOf('[');
       final end = text.lastIndexOf(']');
       if (start != -1 && end != -1) {
-        final List<dynamic> decoded = jsonDecode(text.substring(start, end + 1));
+        final List<dynamic> decoded = jsonDecode(
+          text.substring(start, end + 1),
+        );
         return decoded.map((e) {
           final item = Map<String, dynamic>.from(e);
           item['distance'] = item['distance'].toString();
