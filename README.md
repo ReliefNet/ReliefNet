@@ -32,6 +32,27 @@ ReliefNet bridges the gap between **disaster-affected communities** and **verifi
 Every report is instantly analyzed by **Gemini AI** to surface urgency insights, required skills, and actionable solutions — before a single volunteer is dispatched.
 
 ---
+---
+
+## 📥 Download App
+
+Get the latest version of **ReliefNet APK**:
+
+👉 [Download Latest APK](https://github.com/ramanexc/reliefnet/releases/download/v1.0.0/app-release.apk)
+
+> ⚠️ Enable "Install from unknown sources" on your Android device before installing.
+
+---
+
+## 🎥 Demo Video
+
+Watch ReliefNet in action:
+
+<iframe width="800" height="450"
+src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
+frameborder="0" allowfullscreen></iframe>
+
+---
 
 ## Screenshots
 
