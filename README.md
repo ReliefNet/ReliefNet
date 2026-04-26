@@ -32,7 +32,6 @@ ReliefNet bridges the gap between **disaster-affected communities** and **verifi
 Every report is instantly analyzed by **Gemini AI** to surface urgency insights, required skills, and actionable solutions — before a single volunteer is dispatched.
 
 ---
----
 
 ## 📥 Download App
 
@@ -48,17 +47,27 @@ Get the latest version of **ReliefNet APK**:
 
 Watch ReliefNet in action:
 
-<iframe width="800" height="450"
-src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
-frameborder="0" allowfullscreen></iframe>
+[![Demo Video](https://img.youtube.com/vi/aYeGnr154mM/maxresdefault.jpg)](https://youtu.be/aYeGnr154mM)
+
+---
+
+## 📊 Pitch Deck
+
+View our Google Solution Challenge 2026 presentation:
+
+👉 [Open Presentation on Canva](https://canva.link/nstf4xhm61ehjbu)
 
 ---
 
 ## Screenshots
 
-| Report Issue | Live Dashboard | AI Analysis | Volunteer Task | My Tasks | Profile |
-|:---:|:---:|:---:|:---:|:---:|:---:|
-| ![](screenshots/report.jpg) | ![](screenshots/dashboard.jpg) | ![](screenshots/ai_analysis.jpg) | ![](screenshots/volunteer_task.jpg) | ![](screenshots/my_tasks.jpg) | ![](screenshots/profile.jpg) |
+| Home | Dashboard | Report Issue | AI Analysis |
+|:---:|:---:|:---:|:---:|
+| ![](screenshots/home.jpeg) | ![](screenshots/dashboard.jpeg) | ![](screenshots/report.jpeg) | ![](screenshots/ai_analysis.jpeg) |
+
+| Volunteer Task | Task Workflow | Profile | Settings |
+|:---:|:---:|:---:|:---:|
+| ![](screenshots/volunteer_task.jpeg) | ![](screenshots/volunteer_workflow.jpeg) | ![](screenshots/profile.jpeg) | ![](screenshots/settings.jpeg) |
 
 ---
 
@@ -254,12 +263,16 @@ Firebase will prompt you with a direct link to create it on first run.
 <table>
 <tr>
 <td align="center" width="33%">
-<b>Ramandeep Singh</b><br/>
-<sub>Flutter Development · UI/UX · Gemini AI · Integration</sub>
+<b>Ramandeep Singh</b> 👑<br/>
+<sub>Team Lead · Flutter Development · UI/UX · Gemini AI · Integration</sub>
 </td>
 <td align="center" width="33%">
 <b>Japneet Singh</b><br/>
-<sub>Firebase Backend · Auth · Gemini AI · Integration</sub>
+<sub>Flutter Development · Firebase Backend · Auth · Gemini AI · Integration</sub>
+</td>
+<td align="center" width="33%">
+<b>Amandeep Singh</b><br/>
+<sub>Presentation · Video Editing · Logo / App Icon Design</sub>
 </td>
 </tr>
 </table>

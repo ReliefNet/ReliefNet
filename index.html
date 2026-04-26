@@ -669,6 +669,169 @@
     .flow-steps { grid-template-columns: 1fr; }
     .stat { flex-basis: 100%; border-right: none; border-bottom: 1px solid var(--border); }
   }
+
+  /* ── SCREENSHOTS ── */
+  .screenshots-scroll {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .screenshot-item {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    aspect-ratio: 9/19.5;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .screenshot-item:hover {
+    transform: translateY(-4px) scale(1.02);
+    border-color: rgba(59,130,246,0.35);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  }
+
+  .screenshot-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .screenshot-label {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 8px 10px 10px;
+    background: linear-gradient(to top, rgba(2,6,23,0.95) 0%, transparent 100%);
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--muted2);
+    letter-spacing: 0.02em;
+    text-align: center;
+  }
+
+  /* lightbox */
+  .lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(2,6,23,0.95);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+
+  .lightbox.open { display: flex; }
+
+  .lightbox img {
+    max-height: 90vh;
+    max-width: 90vw;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    object-fit: contain;
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 24px; right: 28px;
+    font-size: 1.5rem;
+    color: var(--muted);
+    cursor: pointer;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, border-color 0.2s;
+    font-family: sans-serif;
+    line-height: 1;
+  }
+
+  .lightbox-close:hover { color: var(--text); border-color: var(--primary); }
+
+  @media (max-width: 768px) {
+    .screenshots-scroll { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 400px) {
+    .screenshots-scroll { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  }
+
+  /* leader badge */
+  .leader-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.25);
+    color: var(--primary);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 6px;
+    vertical-align: middle;
+    font-weight: 500;
+  }
+
+  /* ── PRESENTATION ── */
+  .ppt-card {
+    margin-top: 48px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .ppt-card:hover { border-color: rgba(59,130,246,0.3); }
+
+  .ppt-preview {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ppt-preview iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  .ppt-footer {
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .ppt-meta strong {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+
+  .ppt-meta span {
+    font-size: 0.77rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
 </style>
 </head>
 <body>
@@ -682,7 +845,7 @@
   <div class="nav-right">
     <span class="badge badge-blue">v1.0.0</span>
     <span class="badge">Solution Challenge 2026</span>
-    <a href="https://github.com/ReliefNet/ReliefNet/releases/download/v1.0.0/reliefnet-v1.0.0.apk" class="btn btn-primary btn-sm">
+    <a href="YOUR_APK_RELEASE_LINK_HERE" class="btn btn-primary btn-sm">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
       </svg>
@@ -705,7 +868,7 @@
   </p>
 
   <div class="hero-actions">
-    <a href="https://github.com/ReliefNet/ReliefNet/releases/download/v1.0.0/reliefnet-v1.0.0.apk" class="btn btn-primary btn-lg">
+    <a href="YOUR_APK_RELEASE_LINK_HERE" class="btn btn-primary btn-lg">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
       </svg>
@@ -749,19 +912,61 @@
     <p class="section-body">Watch ReliefNet handle a full crisis cycle — from report submission and Gemini AI analysis to volunteer dispatch and photo proof completion.</p>
 
     <div class="video-wrap">
-      <!--
-        YouTube embed — uncomment and replace VIDEO_ID:
-        <iframe src="https://www.youtube.com/embed/VIDEO_ID?rel=0&modestbranding=1&color=white" allowfullscreen></iframe>
-      -->
-      <div class="video-placeholder" id="vid"
-        onclick="document.getElementById('vid').innerHTML='<p style=\'font-family:JetBrains Mono,monospace;font-size:0.75rem;letter-spacing:0.08em;color:var(--muted)\'>UNCOMMENT THE IFRAME ABOVE WITH YOUR VIDEO ID</p>'">
-        <div class="play-btn">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        </div>
-        <span class="video-lbl">Demo Video</span>
+      <iframe src="https://www.youtube.com/embed/aYeGnr154mM?rel=0&modestbranding=1&color=white" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SCREENSHOTS -->
+<div class="section reveal">
+  <div class="container">
+    <p class="label">Screenshots</p>
+    <h2 class="section-title">Every screen, in detail</h2>
+    <p class="section-body">From submitting a crisis report to AI analysis and volunteer task flow — here's what ReliefNet looks like in your hand.</p>
+
+    <div class="screenshots-scroll">
+      <div class="screenshot-item" onclick="openLB('screenshots/home.jpeg')">
+        <img src="screenshots/home.jpeg" alt="Home" loading="lazy" />
+        <div class="screenshot-label">Home</div>
+      </div>
+      <div class="screenshot-item" onclick="openLB('screenshots/dashboard.jpeg')">
+        <img src="screenshots/dashboard.jpeg" alt="Dashboard" loading="lazy" />
+        <div class="screenshot-label">Live Dashboard</div>
+      </div>
+      <div class="screenshot-item" onclick="openLB('screenshots/report.jpeg')">
+        <img src="screenshots/report.jpeg" alt="Report" loading="lazy" />
+        <div class="screenshot-label">Report Issue</div>
+      </div>
+      <div class="screenshot-item" onclick="openLB('screenshots/ai_analysis.jpeg')">
+        <img src="screenshots/ai_analysis.jpeg" alt="AI Analysis" loading="lazy" />
+        <div class="screenshot-label">AI Analysis</div>
+      </div>
+      <div class="screenshot-item" onclick="openLB('screenshots/volunteer_task.jpeg')">
+        <img src="screenshots/volunteer_task.jpeg" alt="Volunteer Task" loading="lazy" />
+        <div class="screenshot-label">Volunteer Task</div>
+      </div>
+      <div class="screenshot-item" onclick="openLB('screenshots/volunteer_workflow.jpeg')">
+        <img src="screenshots/volunteer_workflow.jpeg" alt="Volunteer Workflow" loading="lazy" />
+        <div class="screenshot-label">Task Workflow</div>
+      </div>
+      <div class="screenshot-item" onclick="openLB('screenshots/profile.jpeg')">
+        <img src="screenshots/profile.jpeg" alt="Profile" loading="lazy" />
+        <div class="screenshot-label">Profile</div>
+      </div>
+      <div class="screenshot-item" onclick="openLB('screenshots/settings.jpeg')">
+        <img src="screenshots/settings.jpeg" alt="Settings" loading="lazy" />
+        <div class="screenshot-label">Settings</div>
       </div>
     </div>
   </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLB()">
+  <span class="lightbox-close" onclick="closeLB()">✕</span>
+  <img id="lbImg" src="" alt="Screenshot" onclick="event.stopPropagation()" />
 </div>
 
 <div class="divider"></div>
@@ -957,13 +1162,13 @@
   <div class="container">
     <p class="label">Team</p>
     <h2 class="section-title">Who built this</h2>
-    <p class="section-body">A two-person team from GTBIT, New Delhi — built for communities in crisis.</p>
+    <p class="section-body">A three-person team from GTBIT, New Delhi — built for communities in crisis.</p>
 
     <div class="team-grid">
       <div class="team-card">
         <div class="avatar">RS</div>
         <div>
-          <div class="team-name">Ramandeep Singh</div>
+          <div class="team-name">Ramandeep Singh <span class="leader-badge">LEADER</span></div>
           <div class="team-role">Flutter Development · UI/UX<br/>Gemini AI · Integration</div>
         </div>
       </div>
@@ -971,8 +1176,49 @@
         <div class="avatar">JS</div>
         <div>
           <div class="team-name">Japneet Singh</div>
-          <div class="team-role">Firebase Backend · Auth<br/>Gemini AI · Integration</div>
+          <div class="team-role">Flutter Development · Firebase Backend<br/>Auth · Gemini AI · Integration</div>
         </div>
+      </div>
+      <div class="team-card">
+        <div class="avatar">AS</div>
+        <div>
+          <div class="team-name">Amandeep Singh</div>
+          <div class="team-role">Presentation · Video Editing<br/>Logo / App Icon Design</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- PRESENTATION -->
+<div class="section reveal">
+  <div class="container">
+    <p class="label">Pitch Deck</p>
+    <h2 class="section-title">The full presentation</h2>
+    <p class="section-body">Our Google Solution Challenge 2026 submission deck — covering the problem, solution, architecture, and impact of ReliefNet.</p>
+
+    <div class="ppt-card">
+      <div class="ppt-preview">
+        <iframe
+          src="https://www.canva.com/design/nstf4xhm61ehjbu/view?embed"
+          allowfullscreen
+          allow="fullscreen"
+          title="ReliefNet Pitch Deck">
+        </iframe>
+      </div>
+      <div class="ppt-footer">
+        <div class="ppt-meta">
+          <strong>ReliefNet — Solution Challenge 2026</strong>
+          <span>Google DSC · GTBIT, New Delhi · Powered by Canva</span>
+        </div>
+        <a href="https://canva.link/nstf4xhm61ehjbu" target="_blank" rel="noopener" class="btn btn-outline" style="padding:10px 20px; font-size:0.83rem;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          Open in Canva
+        </a>
       </div>
     </div>
   </div>
@@ -984,7 +1230,7 @@
     <div class="dl-card">
       <h2>Get the app</h2>
       <p>Download the Android APK directly — no Play Store required.</p>
-      <a href="https://github.com/ReliefNet/ReliefNet/releases/download/v1.0.0/reliefnet-v1.0.0.apk" class="btn btn-primary btn-lg">
+      <a href="YOUR_APK_RELEASE_LINK_HERE" class="btn btn-primary btn-lg">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
@@ -1002,7 +1248,7 @@
 <!-- FOOTER -->
 <footer>
   <strong>ReliefNet v1.0.0</strong> &nbsp;·&nbsp;
-  Ramandeep Singh &amp; Japneet Singh &nbsp;·&nbsp; GTBIT, New Delhi
+  Ramandeep Singh · Japneet Singh · Amandeep Singh &nbsp;·&nbsp; GTBIT, New Delhi
   <br/><br/>
   Submitted to the <a href="https://developers.google.com/community/gdsc-solution-challenge" target="_blank">Google Solution Challenge 2026</a>
   &nbsp;·&nbsp; Made with ❤️ for communities in crisis
@@ -1016,6 +1262,19 @@
     { threshold: 0.08 }
   );
   document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  function openLB(src) {
+    document.getElementById('lbImg').src = src;
+    document.getElementById('lightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLB() {
+    document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLB(); });
 </script>
 
 </body>
