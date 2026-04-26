@@ -810,6 +810,114 @@
     display: block;
   }
 
+  .ppt-mock {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #0a1628 0%, #0f1f3d 50%, #0d1a35 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    position: relative;
+    padding: 40px;
+  }
+
+  /* decorative grid lines on mock */
+  .ppt-mock::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .ppt-mock::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 200px;
+    background: radial-gradient(ellipse, rgba(59,130,246,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .ppt-mock-inner {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .ppt-mock-logo {
+    margin-bottom: 4px;
+  }
+
+  .ppt-rn {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--text);
+  }
+
+  .ppt-rn span { color: var(--primary); }
+
+  .ppt-mock-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--primary);
+    font-weight: 500;
+  }
+
+  .ppt-mock-sub {
+    font-size: 0.88rem;
+    color: var(--muted2);
+    font-weight: 400;
+    max-width: 420px;
+    line-height: 1.6;
+  }
+
+  .ppt-mock-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .ppt-mock-tags span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.03);
+  }
+
+  .ppt-open-hint {
+    position: absolute;
+    bottom: 20px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-weight: 400;
+    z-index: 1;
+  }
+
+  .ppt-card:hover .ppt-mock { background: linear-gradient(135deg, #0d1c32 0%, #122545 50%, #101f3d 100%); }
+  .ppt-card:hover .ppt-open-hint { color: var(--primary); }
+
   .ppt-footer {
     padding: 20px 24px;
     display: flex;
@@ -845,6 +953,12 @@
   <div class="nav-right">
     <span class="badge badge-blue">v1.0.0</span>
     <span class="badge">Solution Challenge 2026</span>
+    <a href="https://github.com/ReliefNet/ReliefNet" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+      </svg>
+      View Code
+    </a>
     <a href="YOUR_APK_RELEASE_LINK_HERE" class="btn btn-primary btn-sm">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -879,6 +993,12 @@
         <polygon points="5 3 19 12 5 21 5 3"/>
       </svg>
       Watch Demo
+    </a>
+    <a href="https://github.com/ReliefNet/ReliefNet" target="_blank" rel="noopener" class="btn btn-outline btn-lg">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+      </svg>
+      View on GitHub
     </a>
   </div>
 
@@ -1199,28 +1319,41 @@
     <h2 class="section-title">The full presentation</h2>
     <p class="section-body">Our Google Solution Challenge 2026 submission deck — covering the problem, solution, architecture, and impact of ReliefNet.</p>
 
-    <div class="ppt-card">
+    <a href="https://canva.link/nstf4xhm61ehjbu" target="_blank" rel="noopener" class="ppt-card" style="text-decoration:none; display:block; cursor:pointer;">
       <div class="ppt-preview">
-        <iframe
-          src="https://www.canva.com/design/nstf4xhm61ehjbu/view?embed"
-          allowfullscreen
-          allow="fullscreen"
-          title="ReliefNet Pitch Deck">
-        </iframe>
+        <!-- Decorative slide mock since Canva blocks iframes on share links -->
+        <div class="ppt-mock">
+          <div class="ppt-mock-inner">
+            <div class="ppt-mock-logo">
+              <span class="ppt-rn">Relief<span>Net</span></span>
+            </div>
+            <div class="ppt-mock-title">Google Solution Challenge 2026</div>
+            <div class="ppt-mock-sub">NGO Field Reporting &amp; Volunteer Dispatch · Powered by Gemini AI</div>
+            <div class="ppt-mock-tags">
+              <span>Flutter</span><span>Firebase</span><span>Gemini AI</span><span>Google Maps</span>
+            </div>
+          </div>
+          <div class="ppt-open-hint">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            Click to open presentation
+          </div>
+        </div>
       </div>
       <div class="ppt-footer">
         <div class="ppt-meta">
           <strong>ReliefNet — Solution Challenge 2026</strong>
           <span>Google DSC · GTBIT, New Delhi · Powered by Canva</span>
         </div>
-        <a href="https://canva.link/nstf4xhm61ehjbu" target="_blank" rel="noopener" class="btn btn-outline" style="padding:10px 20px; font-size:0.83rem;">
+        <span class="btn btn-outline" style="padding:10px 20px; font-size:0.83rem; pointer-events:none;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
           </svg>
           Open in Canva
-        </a>
+        </span>
       </div>
-    </div>
+    </a>
   </div>
 </div>
 
@@ -1230,12 +1363,20 @@
     <div class="dl-card">
       <h2>Get the app</h2>
       <p>Download the Android APK directly — no Play Store required.</p>
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; position:relative; z-index:1;">
       <a href="YOUR_APK_RELEASE_LINK_HERE" class="btn btn-primary btn-lg">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
         Download APK — ReliefNet v1.0.0
       </a>
+      <a href="https://github.com/ReliefNet/ReliefNet" target="_blank" rel="noopener" class="btn btn-outline btn-lg">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+        </svg>
+        View on GitHub
+      </a>
+      </div>
       <br/>
       <span class="apk-note">
         <span class="wi">⚠</span>
@@ -1251,6 +1392,7 @@
   Ramandeep Singh · Japneet Singh · Amandeep Singh &nbsp;·&nbsp; GTBIT, New Delhi
   <br/><br/>
   Submitted to the <a href="https://developers.google.com/community/gdsc-solution-challenge" target="_blank">Google Solution Challenge 2026</a>
+  &nbsp;·&nbsp; <a href="https://github.com/ReliefNet/ReliefNet" target="_blank">GitHub</a>
   &nbsp;·&nbsp; Made with ❤️ for communities in crisis
 </footer>
 
